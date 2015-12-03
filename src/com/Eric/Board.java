@@ -244,6 +244,7 @@ public class Board{
 			}
 
 			yModifier = -1;
+
 		}
 		return moves;
 	}
