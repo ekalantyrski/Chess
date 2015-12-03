@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e9b01387-4429-47b8-8109-c1bc7ef71684" name="Default" comment="Initial Commit">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/Chess/com/Eric/Board.class" afterPath="$PROJECT_DIR$/out/production/Chess/com/Eric/Board.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/com/Eric/Board.java" afterPath="$PROJECT_DIR$/src/com/Eric/Board.java" />
     </list>
     <ignored path="Chess.iws" />
@@ -41,8 +39,8 @@
       <file leaf-file-name="Board.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/com/Eric/Board.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.083333336">
-              <caret line="351" column="17" selection-start-line="351" selection-start-column="17" selection-end-line="351" selection-end-column="17" />
+            <state vertical-scroll-proportion="-10.861111">
+              <caret line="9" column="0" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -736,7 +734,7 @@
       <workItem from="1448935114689" duration="3348000" />
       <workItem from="1448940462090" duration="2396000" />
       <workItem from="1449005596147" duration="5451000" />
-      <workItem from="1449108849578" duration="7414000" />
+      <workItem from="1449108849578" duration="7527000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <created>1449113846634</created>
@@ -748,7 +746,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="191547000" />
+    <option name="totallyTimeSpent" value="191660000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -810,7 +808,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/com/Eric/Board.java</url>
-          <line>309</line>
+          <line>310</line>
           <properties />
           <option name="timeStamp" value="54" />
         </line-breakpoint>
@@ -1144,8 +1142,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/Eric/Board.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.083333336">
-          <caret line="351" column="17" selection-start-line="351" selection-start-column="17" selection-end-line="351" selection-end-column="17" />
+        <state vertical-scroll-proportion="-10.861111">
+          <caret line="9" column="0" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

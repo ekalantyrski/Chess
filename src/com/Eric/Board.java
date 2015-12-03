@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import static com.Eric.PieceType.*;
 import static com.Eric.PieceColor.*;
 
-public class Board{
+public class Board
+{
 
 	private ArrayList<Element> elementArray;
 	private ArrayList<Position> validMoves;
