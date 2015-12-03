@@ -1,9 +1,7 @@
 package com.Eric;
 
 
-import javax.swing.*;
 import java.awt.image.BufferedImage;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import static com.Eric.PieceType.*;
 import static com.Eric.PieceColor.*;
@@ -196,6 +194,7 @@ public class Board{
 				validMoves = getPawnValidMoves(modifier);
 				break;
 			case QUEEN:
+				validMoves = getQueenValidMoves();
 				break;
 			case ROOK:
 
@@ -235,14 +234,22 @@ public class Board{
 			}
 		}
 		int yModifier = 1;
-		for(int i = 0; i < 2; i++)
-		{
+		for(int i = 0; i < 2; i++) {
 			tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY() + (1 * yModifier));
-			if(!isNull(tempPosition) && !isFriendlyPiece(tempPosition))
-			{
-				moves.add(tempPosition);
+			if (!isNull(tempPosition)){
+				if(!isFriendlyPiece(tempPosition)) {
+					moves.add(tempPosition);
+				}
 			}
-
+			else
+			{
+				tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (1 * yModifier));
+				if(isEnPassant(tempPosition))
+				{
+					tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY() + (1 * yModifier));
+					moves.add(tempPosition);
+				}
+			}
 			yModifier = -1;
 
 		}
@@ -251,47 +258,119 @@ public class Board{
 	
 	private ArrayList<Position> getKnightValidMoves()
 	{
-//		for(int i = 0; i < moves.size(); i++)
-//		{
-//			if(!isNull(moves.get(i)) && isFriendlyPiece(moves.get(i)))
-//			{
-//				removePositionFromList(moves, moves.get(i));
-//				i--;
-//			}
-//		}
-		return null;
-	}
-
-	private ArrayList<Position> getQueenValidMoves(ArrayList<Position> moves)
-	{
-		return moves;
-	}
-
-	private ArrayList<Position> removeStraightMoves(ArrayList<Position> moves)
-	{
-		//vertical
+		ArrayList<Position> moves = new ArrayList<>();
 		int modifier = 1;
+		int yModifier = 1;
 		Position tempPosition;
-		for(int i = 0; i < moves.size(); i++)
+		//moves with first 2 squares on columns
+		for(int i = 0; i < 2; i++)
 		{
-
+			yModifier = 1;
+			for(int j = 0; j < 2; j++)
+			{
+				tempPosition = new Position(currentPosition.getX() + (2 * modifier), currentPosition.getY() + (1 * yModifier));
+				if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
+				{
+					moves.add(tempPosition);
+				}
+					yModifier = -1;
+			}
+			modifier = -1;
 
 		}
-		return null;
-	}
-
-	private ArrayList<Position> removePositionFromList(ArrayList<Position> moves, Position position)
-	{
-		for(int i = 0; i < moves.size(); i++)
+		//moves with first 2 squares on row
+		modifier = 1;
+		for(int k = 0; k < 2; k++)
 		{
-			if(moves.get(i).equals(position))
+			yModifier = 1;
+			for(int l = 0; l < 2; l++)
 			{
-				moves.remove(i);
-				break;
+				tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY() + (2 * yModifier));
+				if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
+				{
+					moves.add(tempPosition);
+				}
+				yModifier = -1;
 			}
+			modifier = -1;
 		}
 		return moves;
-		
+	}
+
+	private ArrayList<Position> getQueenValidMoves()
+	{
+		ArrayList<Position> moves = new ArrayList<>();
+		moves.addAll(getStraightMoves());
+		moves.addAll(getDiagonalMoves());
+		return moves;
+	}
+
+	private ArrayList<Position> getStraightMoves()
+	{
+		ArrayList<Position> moves = new ArrayList<>();
+		Position tempPosition;
+		int modifier = 1;
+		int count;
+		//vertical moves
+		for(int i = 0; i < 2; i++)
+		{
+			count = 1;
+			tempPosition = new Position(currentPosition.getX() + (count * modifier), currentPosition.getY());
+			while(!isOutOfBounds(tempPosition))
+			{
+				if(isNull(tempPosition))
+				{
+					moves.add(tempPosition);
+				}
+				else if(!isFriendlyPiece(tempPosition))
+				{
+					moves.add(tempPosition);
+					break;
+				}
+				else
+				{
+					break;
+				}
+				count++;
+				tempPosition = new Position(currentPosition.getX() + (count * modifier), currentPosition.getY());
+			}
+			modifier = -1;
+		}
+		modifier = 1;
+		//get horizontal moves
+		for(int j = 0; j < 2; j++)
+		{
+			count = 1;
+			tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (count * modifier));
+			while(!isOutOfBounds(tempPosition))
+			{
+				if (isNull(tempPosition))
+				{
+					moves.add(tempPosition);
+				}
+				else if (!isFriendlyPiece(tempPosition))
+				{
+					moves.add(tempPosition);
+					break;
+				}
+				else
+				{
+					break;
+				}
+				count++;
+				tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (count * modifier));
+			}
+			modifier = -1;
+
+		}
+		return moves;
+	}
+
+	private ArrayList<Position> getDiagonalMoves()
+	{
+		ArrayList<Position> moves = new ArrayList<>();
+
+		return moves;
 	}
 	private boolean isEnPassant(Position position)
 	{
@@ -336,6 +415,15 @@ public class Board{
             return true;
         else
             return false;
+
+	}
+
+	private boolean isOutOfBounds(Position position)
+	{
+		if(position.getX() > 7 || position.getX() < 0 || position.getY() > 7 || position.getY() < 0)
+			return true;
+		else
+			return false;
 
 	}
 	
