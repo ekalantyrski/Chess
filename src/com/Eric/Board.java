@@ -370,7 +370,80 @@ public class Board
 	private ArrayList<Position> getDiagonalMoves()
 	{
 		ArrayList<Position> moves = new ArrayList<>();
+		int xModifier = 1;
+		int yModifier = 1;
+		Position tempPosition;
+		for(int i = 0; i < 2; i++)
+		{
+			// top left to bottom right
+			tempPosition = new Position(currentPosition.getX() + xModifier, currentPosition.getY() + yModifier);
+			while(!isOutOfBounds(tempPosition))
+			{
+				if(isNull(tempPosition))
+				{
+					moves.add(tempPosition);
+				}
+				else if(!isFriendlyPiece(tempPosition))
+				{
+					moves.add(tempPosition);
+					break;
+				}
+				else
+				{
+					break;
+				}
+				if(i == 0)
+				{
+					xModifier++;
+					yModifier++;
+				}
+				else
+				{
+					xModifier--;
+					yModifier--;
+				}
+				tempPosition = new Position(currentPosition.getX() + xModifier, currentPosition.getY() + yModifier);
+			}
+			xModifier = -1;
+			yModifier = -1;
 
+		}
+		//top right to bottom left
+		xModifier = 1;
+		yModifier = -1;
+		for(int j = 0; j < 2; j++)
+		{
+			tempPosition = new Position(currentPosition.getX() + xModifier, currentPosition.getY() + yModifier);
+			while(!isOutOfBounds(tempPosition))
+			{
+				if(isNull(tempPosition))
+				{
+					moves.add(tempPosition);
+				}
+				else if(!isFriendlyPiece(tempPosition))
+				{
+					moves.add(tempPosition);
+					break;
+				}
+				else
+				{
+					break;
+				}
+				if(j == 0)
+				{
+					xModifier++;
+					yModifier--;
+				}
+				else
+				{
+					xModifier--;
+					yModifier++;
+				}
+				tempPosition = new Position(currentPosition.getX() + xModifier, currentPosition.getY() + yModifier);
+			}
+			xModifier = -1;
+			yModifier = 1;
+		}
 		return moves;
 	}
 	private boolean isEnPassant(Position position)
