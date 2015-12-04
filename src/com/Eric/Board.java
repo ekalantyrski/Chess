@@ -184,8 +184,10 @@ public class Board
 		ArrayList<Position> validMoves = new ArrayList<>();
 		switch(pieceType) {
 			case BISHOP:
+				validMoves = getBishopValidMoves();
 				break;
 			case KING:
+				validMoves = getKingValidMoves();
 				break;
 			case KNIGHT:
 				validMoves = getKnightValidMoves();
@@ -198,7 +200,7 @@ public class Board
 				validMoves = getQueenValidMoves();
 				break;
 			case ROOK:
-
+				validMoves = getRookValidMoves();
 				break;
 
 		}
@@ -306,6 +308,43 @@ public class Board
 		return moves;
 	}
 
+	private ArrayList<Position> getRookValidMoves()
+	{
+		return getStraightMoves();
+	}
+
+	private ArrayList<Position> getBishopValidMoves()
+	{
+		return getDiagonalMoves();
+	}
+	private ArrayList<Position> getKingValidMoves()
+	{
+		ArrayList<Position> moves = new ArrayList<>();
+		int modifier = 1;
+		Position tempPosition;
+		for(int i = 0; i < 2; i++)
+		{
+			tempPosition = new Position(currentPosition.getX() + modifier, currentPosition.getY());
+			if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
+				moves.add(tempPosition);
+			tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + modifier);
+			if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
+				moves.add(tempPosition);
+			tempPosition = new Position(currentPosition.getX() + modifier, currentPosition.getY() + modifier);
+			if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
+				moves.add(tempPosition);
+			modifier = -1;
+
+		}
+
+		tempPosition = new Position(currentPosition.getX() - 1, currentPosition.getY() + 1);
+		if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
+			moves.add(tempPosition);
+		tempPosition = new Position(currentPosition.getX() + 1, currentPosition.getY() - 1);
+		if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
+			moves.add(tempPosition);
+		return moves;
+	}
 	private ArrayList<Position> getStraightMoves()
 	{
 		ArrayList<Position> moves = new ArrayList<>();
