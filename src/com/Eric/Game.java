@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 
 /**
  * Created by Eric on 11/5/2015.
@@ -14,13 +15,25 @@ public class Game {
     private Screen screen;
     private Board board;
     private Position clickPosition;
+    private boolean whiteTurn;
+    private boolean flipBoard;
+    private ArrayList<Element> elementArray = null;
 
     MouseAdapter mouseAdapter = new MouseAdapter()
     {
         public void mouseReleased(MouseEvent e) {
             board.calculate(calculateSquareCoordinate(e.getX(), e.getY()));
-            screen.setElementArray(board.getElementArray());
+            elementArray = board.getElementArray();
+            screen.setElementArray(elementArray);
             screen.update();
+            if(board.getCheckStatus() == 2)
+            {
+            	System.out.println("checkmate");
+            }
+            else if(board.getCheckStatus() == 1)
+            {
+                System.out.println("stalemate");
+            }
         };
     };
 
@@ -30,6 +43,9 @@ public class Game {
         createWindow();
         DAL.load();
         board = new Board(true);
+        whiteTurn = true;
+        flipBoard = false;
+        board.setFlipBoard(flipBoard);
         screen.setElementArray(board.getElementArray());
         screen.update();
         screen.addMouseListener(mouseAdapter);
@@ -47,7 +63,9 @@ public class Game {
         JMenuBar menuBar = new JMenuBar();
         JMenu menu = new JMenu("File");
         menuBar.add(menu);
-        JMenuItem menuItem = new JMenuItem();
+        JMenuItem menuItem = new JMenuItem("Hello");
+
+        menu.add(menuItem);
 
         frame.setJMenuBar(menuBar);
         frame.pack();

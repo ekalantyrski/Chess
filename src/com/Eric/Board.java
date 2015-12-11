@@ -14,11 +14,18 @@ public class Board
     private Piece[][] board;
 	private BufferedImage possibleMovesImage;
 	private Position currentPosition;
+	private int globalModifier;
+	private boolean flipBoard;
+    private boolean whiteTurn;
+	private int checkStatus;
     public Board(boolean whiteStart)
     {
         board = new Piece[8][8];
         createPieces(whiteStart);
 		possibleMovesImage = DAL.getPossibleMovesImage();
+		globalModifier = (whiteStart) ? -1 : 1;
+        whiteTurn = whiteStart;
+		checkStatus = 0;
     }
 
     private void createPieces(boolean whiteStart)
@@ -51,13 +58,13 @@ public class Board
 	private void createKings(boolean whiteStart)
 	{
 			board[7][4] = new Piece(KING, WHITE, new Position(7, 4), board);
-			board[0][3] = new Piece(KING, BLACK, new Position(0 ,3), board);
+			board[0][4] = new Piece(KING, BLACK, new Position(0 ,4), board);
 	}
 	
 	private void createQueens(boolean whiteStart)
 	{
 			board[7][3] = new Piece(QUEEN, WHITE, new Position(7 ,3), board);
-			board[0][4] = new Piece(QUEEN, BLACK, new Position(0, 4), board);
+			board[0][3] = new Piece(QUEEN, BLACK, new Position(0, 3), board);
 	}
 	
 	private void createBishops(boolean whiteStart)
@@ -97,6 +104,8 @@ public class Board
 				board[board[i].length - i - 1][j] = temp;
 			}
 		}
+		globalModifier *= -1;
+
 	}
 	//returns image of piece at x and y
     public BufferedImage getImage(int x, int y)
@@ -122,38 +131,48 @@ public class Board
     	
     }
     
-    public ArrayList<Element> calculate(Position clickedPosition)
-    {
-    	if(isValidMove(clickedPosition))
-		{
-            if(isNull(clickedPosition))
-            {
-				if(board[currentPosition.getX()][currentPosition.getY()].getPieceType() == PAWN && currentPosition.getY() != clickedPosition.getY())
-				{
-					int modifier  = board[currentPosition.getX()][currentPosition.getY()].getModifier();
-					board[clickedPosition.getX() - (1 * modifier)][clickedPosition.getY()] = null;
-				}
-            }
-			move(clickedPosition);
-			currentPosition = null;
-			validMoves = null;
-			createElementArray();
-		}
-		else {
-			currentPosition = clickedPosition;
-			createElementArray();
-			if (board[clickedPosition.getX()][clickedPosition.getY()] != null) {
-				validMoves = getValidMoves(board[clickedPosition.getX()][clickedPosition.getY()].getPieceType());
-				for (int i = 0; i < validMoves.size(); i++) {
-					elementArray.add(new Element(possibleMovesImage, validMoves.get(i).getX(), validMoves.get(i).getY()));
-				}
-				System.out.println(elementArray.size());
-				return elementArray;
-			}
-			validMoves = null;
-		}
+    public ArrayList<Element> calculate(Position clickedPosition) {
+            if (isValidMove(clickedPosition)) {
+                if (isNull(clickedPosition)) {
+                    if (board[currentPosition.getX()][currentPosition.getY()].getPieceType() == PAWN && currentPosition.getY() != clickedPosition.getY()) {
+                        board[clickedPosition.getX() - (1  * globalModifier)][clickedPosition.getY()] = null;
+                    }
+                }
+                move(clickedPosition);
+                if(flipBoard)
+                {
+                    flipBoard();
+                }
+                validMoves = null;
+                createElementArray();
+                PieceColor color = (whiteTurn) ? WHITE : BLACK;
+				checkStatus = checkCheck(color);
+                whiteTurn ^= true;
+                globalModifier *= -1;
+                currentPosition = null;
+            } else {
+                if(isValidColor(clickedPosition, whiteTurn)) {
 
-			return elementArray;
+                    currentPosition = clickedPosition;
+                    createElementArray();
+                    if (board[clickedPosition.getX()][clickedPosition.getY()] != null) {
+                        validMoves = getValidMoves(board[clickedPosition.getX()][clickedPosition.getY()].getPieceType());
+						validMoves = removeCheckmateMoves(validMoves);
+                        for (int i = 0; i < validMoves.size(); i++) {
+                            elementArray.add(new Element(possibleMovesImage, validMoves.get(i).getX(), validMoves.get(i).getY()));
+                        }
+                        System.out.println(elementArray.size());
+                        return elementArray;
+                    }
+                    validMoves = null;
+                }
+                else
+                {
+                    createElementArray();
+                }
+            }
+
+        return elementArray;
     }
 
 
@@ -193,8 +212,7 @@ public class Board
 				validMoves = getKnightValidMoves();
 				break;
 			case PAWN:
-				int modifier = board[currentPosition.getX()][currentPosition.getY()].getModifier();
-				validMoves = getPawnValidMoves(modifier);
+				validMoves = getPawnValidMoves();
 				break;
 			case QUEEN:
 				validMoves = getQueenValidMoves();
@@ -208,20 +226,19 @@ public class Board
 	}
 
 
-	private ArrayList<Position> getPawnValidMoves(int modifier)
+	private ArrayList<Position> getPawnValidMoves()
 	{
-		Position positionToDelete;
 		Position tempPosition;
 		ArrayList<Position> moves = new ArrayList<>();
 		Piece currentPiece = board[currentPosition.getX()][currentPosition.getY()];
 		//checks for moves going vertically
 		if(currentPiece.amountOfMoves() == 0)
 		{
-			tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY());
+			tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY());
 			if(isNull(tempPosition))
 			{
 				moves.add(tempPosition);
-				tempPosition = new Position(currentPosition.getX() + (2 * modifier), currentPosition.getY());
+				tempPosition = new Position(currentPosition.getX() + (2 * globalModifier), currentPosition.getY());
 				if(isNull(tempPosition))
 				{
 					moves.add(tempPosition);
@@ -230,7 +247,7 @@ public class Board
 		}
 		else
 		{
-			tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY());
+			tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY());
 			if(isNull(tempPosition))
 			{
 				moves.add(tempPosition);
@@ -238,18 +255,18 @@ public class Board
 		}
 		int yModifier = 1;
 		for(int i = 0; i < 2; i++) {
-			tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY() + (1 * yModifier));
-			if (!isNull(tempPosition)){
+			tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (1 * yModifier * globalModifier));
+			if (!isOutOfBounds(tempPosition) && !isNull(tempPosition)){
 				if(!isFriendlyPiece(tempPosition)) {
 					moves.add(tempPosition);
 				}
 			}
 			else
 			{
-				tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (1 * yModifier));
+				tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (1 * yModifier * globalModifier));
 				if(isEnPassant(tempPosition))
 				{
-					tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY() + (1 * yModifier));
+					tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (1 * yModifier * globalModifier));
 					moves.add(tempPosition);
 				}
 			}
@@ -271,7 +288,7 @@ public class Board
 			yModifier = 1;
 			for(int j = 0; j < 2; j++)
 			{
-				tempPosition = new Position(currentPosition.getX() + (2 * modifier), currentPosition.getY() + (1 * yModifier));
+				tempPosition = new Position(currentPosition.getX() + (2 * modifier * globalModifier), currentPosition.getY() + (1 * yModifier * globalModifier));
 				if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 				{
 					moves.add(tempPosition);
@@ -288,7 +305,7 @@ public class Board
 			yModifier = 1;
 			for(int l = 0; l < 2; l++)
 			{
-				tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY() + (2 * yModifier));
+				tempPosition = new Position(currentPosition.getX() + (1 * modifier * globalModifier), currentPosition.getY() + (2 * yModifier * globalModifier));
 				if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 				{
 					moves.add(tempPosition);
@@ -324,23 +341,23 @@ public class Board
 		Position tempPosition;
 		for(int i = 0; i < 2; i++)
 		{
-			tempPosition = new Position(currentPosition.getX() + modifier, currentPosition.getY());
+			tempPosition = new Position(currentPosition.getX() + (modifier * globalModifier), currentPosition.getY());
 			if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 				moves.add(tempPosition);
-			tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + modifier);
+			tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (modifier * globalModifier));
 			if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 				moves.add(tempPosition);
-			tempPosition = new Position(currentPosition.getX() + modifier, currentPosition.getY() + modifier);
+			tempPosition = new Position(currentPosition.getX() + (modifier * globalModifier), currentPosition.getY() + (modifier * globalModifier));
 			if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 				moves.add(tempPosition);
 			modifier = -1;
 
 		}
 
-		tempPosition = new Position(currentPosition.getX() - 1, currentPosition.getY() + 1);
+		tempPosition = new Position(currentPosition.getX() + (-1 * globalModifier), currentPosition.getY() + (1 * globalModifier));
 		if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 			moves.add(tempPosition);
-		tempPosition = new Position(currentPosition.getX() + 1, currentPosition.getY() - 1);
+		tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (-1 * globalModifier));
 		if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 			moves.add(tempPosition);
 		return moves;
@@ -487,7 +504,7 @@ public class Board
 	}
 	private boolean isEnPassant(Position position)
 	{
-		if(!isNull(position) && board[position.getX()][position.getY()].getPieceType() == PAWN && Save.getLastMove().equals(position) && board[position.getX()][position.getY()].amountOfMoves() == 1)
+		if(!isOutOfBounds(position) && !isNull(position) && board[position.getX()][position.getY()].getPieceType() == PAWN && Save.getLastMove().equals(position) && board[position.getX()][position.getY()].amountOfMoves() == 1)
 			return true;
 		else
 			return false;
@@ -539,7 +556,151 @@ public class Board
 			return false;
 
 	}
+
+    private boolean isValidColor(Position clickedPosition, boolean whiteTurn)
+    {
+        if(board[clickedPosition.getX()][clickedPosition.getY()] == null)
+            return true;
+        else if((board[clickedPosition.getX()][clickedPosition.getY()].getPieceColor() == WHITE) == whiteTurn)
+            return true;
+        else
+            return false;
+
+    }
+
+    public void setFlipBoard(boolean flipBoard)
+    {
+        this.flipBoard = flipBoard;
+    }
+
+	private ArrayList<Position> removeCheckmateMoves(ArrayList<Position> moves)
+	{
+		PieceColor pc = board[currentPosition.getX()][currentPosition.getY()].getPieceColor();
+		Position actualPosition = new Position(currentPosition.getX(), currentPosition.getY());
+		Position tempPosition;
+		Piece tempPiece;
+		globalModifier *= -1;
+		int count;
+		for(int moveLoop = 0; moveLoop < moves.size(); moveLoop++)
+		{
+			count = 0;
+			tempPosition  = moves.get(moveLoop);
+			tempPiece = board[tempPosition.getX()][tempPosition.getY()];
+			board[tempPosition.getX()][tempPosition.getY()] = board[actualPosition.getX()][actualPosition.getY()];
+			board[actualPosition.getX()][actualPosition.getY()] = null;
+			for(int i = 0; i < board.length && count < 16; i++)
+			{
+				for(int j = 0; j < board[i].length && count < 16;j++)
+				{
+					if(board[i][j] != null && board[i][j].getPieceColor() != pc)
+					{
+						count++;
+						currentPosition = new Position(i, j);
+						if(isKingAttackable(getValidMoves(board[i][j].getPieceType())))
+						{
+							moves.remove(moveLoop);
+							moveLoop--;
+						}
+						
+					}
+					
+				}
+			}
+			board[actualPosition.getX()][actualPosition.getY()] = board[tempPosition.getX()][tempPosition.getY()];
+			board[tempPosition.getX()][tempPosition.getY()] = tempPiece;
+			
+		}
+		currentPosition = actualPosition;
+		globalModifier *= -1;
+		return moves;
+	}
 	
+	private boolean isKingAttackable(ArrayList<Position> moves)
+	{
+		Position pos;
+		for(int i = 0; i < moves.size(); i++)
+		{
+			pos = moves.get(i);
+			if(board[pos.getX()][pos.getY()] != null && board[pos.getX()][pos.getY()].getPieceType() == KING)
+				return true;
+		}
+		return false;
+	}
+	
+	private int checkCheck(PieceColor pc)
+	{
+		globalModifier *= -1;
+		ArrayList<Position> validMoves;
+		Position tempPosition = currentPosition;
+		validMoves = new ArrayList<>();
+			for(int i = 0; i < board.length; i++)
+			{
+				for(int j = 0; j < board[i].length;j++)
+				{
+					if(board[i][j] != null && board[i][j].getPieceColor() != pc)
+					{
+						currentPosition = new Position(i, j);
+						validMoves.addAll(removeCheckmateMoves(getValidMoves(board[i][j].getPieceType())));
+					}
+					
+				}
+			}
+		globalModifier *= -1;
+			if(validMoves.size() == 0)
+			{
+				validMoves = new ArrayList<>();
+				for(int k = 0; k < board.length; k++)
+				{
+					for(int l = 0; l < board[k].length; l++)
+					{
+						if(board[k][l] != null && board[k][l].getPieceColor() == pc)
+						{
+							currentPosition = new Position(k, l);
+							validMoves.addAll(removeCheckmateMoves(getValidMoves(board[k][l].getPieceType())));
+						}
+					}
+				}
+				if(isKingAttackable(validMoves))
+					return 2; //2 for check mate
+				else
+				{
+					globalModifier *= -1;
+					boolean foundKing = false;
+					for(int i = 0; i < board.length; i++)
+					{
+						for(int j = 0; j < board[i].length; j++)
+						{
+							if(board[i][j]!= null && board[i][j].getPieceType() == KING)
+							{
+								currentPosition = new Position(i, j);
+								validMoves = getValidMoves(KING);
+								validMoves = removeCheckmateMoves(validMoves);
+								if(validMoves.size() == 0)
+								{
+									globalModifier *= 1;
+									return 1;
+								}
+								foundKing = true;
+								break;
+
+							}
+						}
+						if(foundKing)
+							break;
+					}
+				}
+
+			}
+		globalModifier *= 1;
+		currentPosition = tempPosition;
+		return 0;
+	}
+
+	
+	public int getCheckStatus()
+	{
+		return checkStatus;
+	}
 }
 
 

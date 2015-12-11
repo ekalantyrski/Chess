@@ -3,7 +3,6 @@ package com.Eric;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import static com.Eric.PieceColor.BLACK;
 
 public class Piece
 {
@@ -81,15 +80,6 @@ public class Piece
     protected void setPosition(Position position){
         this.position = position;
     }
-    protected int getModifier()
-    {
-    	if(pieceColor == BLACK)
-            return 1;
-        else
-            return -1;
-    	
-    }
-
     public void moved()
     {
         moves++;
