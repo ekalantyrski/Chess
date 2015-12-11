@@ -18,6 +18,7 @@ public class Board
 	private boolean flipBoard;
     private boolean whiteTurn;
 	private int checkStatus;
+	private Save save;
     public Board(boolean whiteStart)
     {
         board = new Piece[8][8];
@@ -26,18 +27,19 @@ public class Board
 		globalModifier = (whiteStart) ? -1 : 1;
         whiteTurn = whiteStart;
 		checkStatus = 0;
+		save = new Save();
     }
 
     private void createPieces(boolean whiteStart)
     {
     	//creates all pieces assuming white starts first
     	//if white does not start first, the board is flipped.
-        createPawns(whiteStart);
-        createKings(whiteStart);
-        createQueens(whiteStart);
-        createRooks(whiteStart);
-        createBishops(whiteStart);
-        createKnights(whiteStart);
+        createPawns();
+        createKings();
+        createQueens();
+        createRooks();
+        createBishops();
+        createKnights();
         if(!whiteStart)
         {
         	flipBoard();
@@ -45,7 +47,7 @@ public class Board
         
     }
 
-	private void createPawns(boolean whiteStart) {
+	private void createPawns() {
             for (int i = 0; i < board.length; i++) {
                 board[6][i] = new Piece(PAWN, WHITE, new Position(6, i), board);
             }
@@ -55,19 +57,19 @@ public class Board
             }
 	}
 	
-	private void createKings(boolean whiteStart)
+	private void createKings()
 	{
 			board[7][4] = new Piece(KING, WHITE, new Position(7, 4), board);
 			board[0][4] = new Piece(KING, BLACK, new Position(0 ,4), board);
 	}
 	
-	private void createQueens(boolean whiteStart)
+	private void createQueens()
 	{
 			board[7][3] = new Piece(QUEEN, WHITE, new Position(7 ,3), board);
 			board[0][3] = new Piece(QUEEN, BLACK, new Position(0, 3), board);
 	}
 	
-	private void createBishops(boolean whiteStart)
+	private void createBishops()
 	{
 			board[7][2] = new Piece(BISHOP, WHITE, new Position(7, 2), board);
 			board[7][5] = new Piece(BISHOP, WHITE, new Position(7, 5), board);
@@ -75,7 +77,7 @@ public class Board
 			board[0][5] = new Piece(BISHOP, BLACK, new Position(0, 5), board);
 	}
 	
-	private void createRooks(boolean whiteStart)
+	private void createRooks()
 	{
 			board[7][0] = new Piece(ROOK, WHITE, new Position(7, 0), board);
 			board[7][7] = new Piece(ROOK, WHITE, new Position(7, 7), board);
@@ -84,7 +86,7 @@ public class Board
 		
 	}
 	
-	private void createKnights(boolean whiteStart)
+	private void createKnights()
 	{
 			board[7][1] = new Piece(KNIGHT, WHITE, new Position(7, 1), board);
 			board[7][6] = new Piece(KNIGHT, WHITE, new Position(7, 6), board);
@@ -119,7 +121,7 @@ public class Board
 	//makes a new element with corresponding picture to the piece, x and y.
     private void createElementArray()
     {
-    	elementArray = new ArrayList<Element>();
+    	elementArray = new ArrayList<>();
     	for(int i = 0; i < board.length; i++)
     		for(int j = 0; j < board[i].length; j++)
     		{
@@ -134,11 +136,28 @@ public class Board
     public ArrayList<Element> calculate(Position clickedPosition) {
             if (isValidMove(clickedPosition)) {
                 if (isNull(clickedPosition)) {
+					// en passent
                     if (board[currentPosition.getX()][currentPosition.getY()].getPieceType() == PAWN && currentPosition.getY() != clickedPosition.getY()) {
                         board[clickedPosition.getX() - (1  * globalModifier)][clickedPosition.getY()] = null;
                     }
+					else if(board[currentPosition.getX()][currentPosition.getY()].getPieceType() == KING && board[currentPosition.getX()][currentPosition.getY()].amountOfMoves() == 0)
+					{
+						//king side castle
+						if(clickedPosition.getY() == 6)
+						{
+							board[currentPosition.getX()][5] = board[currentPosition.getX()][7];
+							board[currentPosition.getX()][7] = null;
+						}
+						//queen side castle
+						else if(clickedPosition.getY() == 2)
+						{
+							board[currentPosition.getX()][3] = board[currentPosition.getX()][0];
+							board[currentPosition.getX()][0] = null;
+						}
+					}
                 }
                 move(clickedPosition);
+				save.addMove(clickedPosition);
                 if(flipBoard)
                 {
                     flipBoard();
@@ -360,6 +379,28 @@ public class Board
 		tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (-1 * globalModifier));
 		if(!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
 			moves.add(tempPosition);
+		//castling
+		if(board[currentPosition.getX()][currentPosition.getY()].amountOfMoves() == 0)
+		{
+			//king side castle
+			tempPosition = new Position(currentPosition.getX(), 7);
+			if(!isNull(tempPosition) && board[tempPosition.getX()][tempPosition.getY()].amountOfMoves() == 0)
+			{
+				if(board[currentPosition.getX()][currentPosition.getY() + 1] == null && board[currentPosition.getX()][currentPosition.getY() + 2] == null)
+				{
+					moves.add(new Position(currentPosition.getX(), currentPosition.getY() + 2));
+				}
+			}
+			//queen side castle
+			tempPosition = new Position(currentPosition.getX(), 0);
+			if(!isNull(tempPosition) && board[tempPosition.getX()][tempPosition.getY()].amountOfMoves() == 0)
+			{
+				if(board[currentPosition.getX()][currentPosition.getY() -1] == null && board[currentPosition.getX()][currentPosition.getY() - 2] == null && board[currentPosition.getX()][currentPosition.getY() - 3] == null)
+				{
+					moves.add(new Position(currentPosition.getX(), currentPosition.getY() - 2));
+				}
+			}
+		}
 		return moves;
 	}
 	private ArrayList<Position> getStraightMoves()
@@ -504,7 +545,8 @@ public class Board
 	}
 	private boolean isEnPassant(Position position)
 	{
-		if(!isOutOfBounds(position) && !isNull(position) && board[position.getX()][position.getY()].getPieceType() == PAWN && Save.getLastMove().equals(position) && board[position.getX()][position.getY()].amountOfMoves() == 1)
+		if((save.getLastMove() != null && save.getLastMove().equals(position)) &&!isOutOfBounds(position) && !isNull(position) &&
+				board[position.getX()][position.getY()].getPieceType() == PAWN && board[position.getX()][position.getY()].amountOfMoves() == 1)
 			return true;
 		else
 			return false;
@@ -528,6 +570,7 @@ public class Board
 	}
 
 	private boolean isNull(Position position) {
+		//checks if a
 		if (board[position.getX()][position.getY()] == null) {
 			return true;
 		}
@@ -550,6 +593,8 @@ public class Board
 
 	private boolean isOutOfBounds(Position position)
 	{
+		//checks if a specific position is out of bounds
+		//if x or y is bigger than 7 or smaller than 0
 		if(position.getX() > 7 || position.getX() < 0 || position.getY() > 7 || position.getY() < 0)
 			return true;
 		else
@@ -632,6 +677,7 @@ public class Board
 		globalModifier *= -1;
 		ArrayList<Position> validMoves;
 		Position tempPosition = currentPosition;
+		//gets all possible moves for other team
 		validMoves = new ArrayList<>();
 			for(int i = 0; i < board.length; i++)
 			{
@@ -646,6 +692,7 @@ public class Board
 				}
 			}
 		globalModifier *= -1;
+		// if amount of moves is 0, checks if the king can be attacked by current team
 			if(validMoves.size() == 0)
 			{
 				validMoves = new ArrayList<>();
@@ -664,6 +711,8 @@ public class Board
 					return 2; //2 for check mate
 				else
 				{
+					// if its not a checkmate, this checks for check
+					// finds king, then sees if he can move anywhere
 					globalModifier *= -1;
 					boolean foundKing = false;
 					for(int i = 0; i < board.length; i++)

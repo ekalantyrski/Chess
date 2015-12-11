@@ -27,7 +27,9 @@ public class Position {
 
     public boolean equals(Position position)
     {
-        if(getX() == position.getX() && getY() == position.getY())
+        if(position == null)
+            return false;
+        else if(getX() == position.getX() && getY() == position.getY())
             return true;
         else
             return false;
