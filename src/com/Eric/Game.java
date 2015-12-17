@@ -1,7 +1,10 @@
 package com.Eric;
 
 import javax.swing.*;
+
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -18,6 +21,8 @@ public class Game {
     private boolean whiteTurn;
     private boolean flipBoard;
     private ArrayList<Element> elementArray = null;
+    private Save save;
+    private JMenuItem menuSaveItem, menuLoadItem;
 
     MouseAdapter mouseAdapter = new MouseAdapter()
     {
@@ -36,13 +41,30 @@ public class Game {
             }
         };
     };
+    
+    ActionListener actionListener = new ActionListener()
+    {
+    	public void actionPerformed(ActionEvent e)
+    	{
+    		if(e.getSource() == menuSaveItem)
+    		{
+    			save.save();
+    		}
+    		else if(e.getSource() == menuLoadItem)
+    		{
+    			board.setSave(Save.createNewSave());
+    		}
+    		
+    	};
+    };
 
 
     public Game()
     {
         createWindow();
         DAL.load();
-        board = new Board(true);
+        save = new Save();
+        board = new Board(true, save);
         whiteTurn = true;
         flipBoard = false;
         board.setFlipBoard(flipBoard);
@@ -63,10 +85,18 @@ public class Game {
         JMenuBar menuBar = new JMenuBar();
         JMenu menu = new JMenu("File");
         menuBar.add(menu);
-        JMenuItem menuItem = new JMenuItem("Hello");
+        menuSaveItem = new JMenuItem("Save");
+        menuLoadItem = new JMenuItem("Load");
+        
+        menuSaveItem.addActionListener(actionListener);
+        menuLoadItem.addActionListener(actionListener);
 
-        menu.add(menuItem);
-
+        menu.add(menuSaveItem);
+        menu.add(menuLoadItem);
+        
+        menu.addSeparator();
+        
+        
         frame.setJMenuBar(menuBar);
         frame.pack();
         frame.setVisible(true);

@@ -1,13 +1,20 @@
 package com.Eric;
 
+import javafx.stage.FileChooser;
+
 import javax.imageio.ImageIO;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class DAL {
     static BufferedImage[] icons;
     static BufferedImage possibleMovesImage;
+    static JFileChooser fc = new JFileChooser();
     public static void load()
     {
         //loads black Icons
@@ -45,6 +52,22 @@ public class DAL {
             e.printStackTrace();
         }
 
+    }
+    
+    public static ArrayList<Position> getMoves()
+    {
+    	int val = fc.showOpenDialog(new JFrame());
+    	if(val == fc.APPROVE_OPTION)
+    	{
+    		File file = fc.getSelectedFile();
+    		System.out.println(file);
+    	}
+    	else
+    	{
+    		return null;
+    	}
+    	
+    	
     }
 
     public static BufferedImage getPossibleMovesImage()

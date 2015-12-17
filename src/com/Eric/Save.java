@@ -14,6 +14,11 @@ public class Save {
         moves = new ArrayList<>();
 
     }
+    
+    private Save(ArrayList<Position> moves)
+    {
+    	this.moves = moves;
+    }
 
 
     public Position getLastMove()
@@ -29,5 +34,15 @@ public class Save {
         moves.add(move);
     }
 
-
+    public void save()
+    {
+    	
+    }
+    
+    public static Save createNewSave()
+    {
+    	
+    	Save save = new Save(DAL.getMoves());
+    	return save;
+    }
 }

@@ -3,11 +3,13 @@ package com.Eric;
 public class Position {
     private int x;
     private int y;
+    private int specialMove;
 
     public Position(int x, int y)
     {
         this.x = x;
         this.y = y;
+        specialMove = 0;
     }
     public int getY()
     {
@@ -40,4 +42,17 @@ public class Position {
         return (char)(97 + column);
     }
 
+    public void setSpecialMove(int move)
+    {
+        //0 = no special moves
+        //1 = en passant
+        //2 = king side castle
+        //3 = queen side castle
+        this.specialMove = move;
+    }
+
+    public int getSpecialMove()
+    {
+        return specialMove;
+    }
 }
