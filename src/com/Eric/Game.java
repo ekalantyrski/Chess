@@ -52,7 +52,11 @@ public class Game {
     		}
     		else if(e.getSource() == menuLoadItem)
     		{
-    			board.setSave(Save.createNewSave());
+                Save newSave = Save.createNewSave();
+                if(newSave != null)
+                {
+                    board.setSave(newSave);
+                }
     		}
     		
     	};

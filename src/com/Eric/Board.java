@@ -678,18 +678,20 @@ public class Board
 		Position actualPosition = new Position(currentPosition.getX(), currentPosition.getY());
 		Position tempPosition;
 		Piece tempPiece;
+		boolean positionRemoved;
 		globalModifier *= -1;
 		int count;
 		for(int moveLoop = 0; moveLoop < moves.size(); moveLoop++)
 		{
+			positionRemoved = false;
 			count = 0;
 			tempPosition  = moves.get(moveLoop);
 			tempPiece = board[tempPosition.getX()][tempPosition.getY()];
 			board[tempPosition.getX()][tempPosition.getY()] = board[actualPosition.getX()][actualPosition.getY()];
 			board[actualPosition.getX()][actualPosition.getY()] = null;
-			for(int i = 0; i < board.length && count < 16; i++)
+			for(int i = 0; i < board.length && count < 16 && !positionRemoved; i++)
 			{
-				for(int j = 0; j < board[i].length && count < 16;j++)
+				for(int j = 0; j < board[i].length && count < 16 && !positionRemoved;j++)
 				{
 					if(board[i][j] != null && board[i][j].getPieceColor() != pc)
 					{
@@ -699,6 +701,7 @@ public class Board
 						{
 							moves.remove(moveLoop);
 							moveLoop--;
+							positionRemoved = true;
 						}
 						
 					}

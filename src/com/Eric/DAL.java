@@ -7,8 +7,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 
 public class DAL {
@@ -60,14 +59,30 @@ public class DAL {
     	if(val == fc.APPROVE_OPTION)
     	{
     		File file = fc.getSelectedFile();
-    		System.out.println(file);
+            ArrayList<Position> moves = new ArrayList<>();
+            String[] turn;
+            String tmp;
+            try
+            {
+                BufferedReader br = new BufferedReader(new FileReader(file));
+                tmp = br.readLine();
+                while(tmp != null)
+                {
+                    turn = tmp.split(" ");
+                    //moves.add()
+
+                }
+            }catch(IOException ioe)
+            {
+                ioe.printStackTrace();
+            }
+
+            return moves;
     	}
     	else
     	{
     		return null;
     	}
-    	
-    	
     }
 
     public static BufferedImage getPossibleMovesImage()

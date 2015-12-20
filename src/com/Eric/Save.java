@@ -41,8 +41,15 @@ public class Save {
     
     public static Save createNewSave()
     {
-    	
-    	Save save = new Save(DAL.getMoves());
-    	return save;
+    	ArrayList<Position> moves = DAL.getMoves();
+    	if(moves != null)
+        {
+            return new Save(moves);
+        }
+        else
+        {
+            return  null;
+        }
+
     }
 }
