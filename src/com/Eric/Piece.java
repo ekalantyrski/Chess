@@ -2,12 +2,12 @@ package com.Eric;
 
 
 import java.awt.image.BufferedImage;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 public class Piece
 {
     private BufferedImage image;
-    private ArrayList<Position> validMoves;
     private PieceColor pieceColor;
     private PieceType pieceType;
     private Position position;
@@ -20,6 +20,15 @@ public class Piece
         this.image = DAL.getImage(pieceType, pieceColor);
         this.position = position;
 
+    }
+
+    private Piece(PieceType pieceType, PieceColor pieceColor, Position position, BufferedImage image, int moves)
+    {
+        this.pieceColor = pieceColor;
+        this.pieceType = pieceType;
+        this.position = position;
+        this.moves = moves;
+        this.image = image;
     }
 
     public BufferedImage getImage()
@@ -92,8 +101,8 @@ public class Piece
     	
     }
 
-    public Piece clone()
+    public Piece copy()
     {
-
+        return new Piece(pieceType, pieceColor, position, image, moves);
     }
 }

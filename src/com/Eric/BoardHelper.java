@@ -557,7 +557,7 @@ public class BoardHelper {
     			pawnPromotion = true;
     		}
     	}
-    	else if(board[oldPosition.getX()][oldPosition.getY()].getPieceType() == KING)
+    	else if(board[oldPosition.getX()][oldPosition.getY()].getPieceType() == KING && board[oldPosition.getX()][oldPosition.getY()].amountOfMoves() == 0)
     	{
     		//king side castle
     		if(newPosition.getY() == 6)

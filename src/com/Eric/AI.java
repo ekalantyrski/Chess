@@ -1,5 +1,9 @@
 package com.Eric;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import static com.Eric.PieceColor.*;
 import static com.Eric.PieceType.*;
@@ -30,7 +34,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     public void move()
     {
     	Save save = new Save();
-        ArrayList<Position> moves = calculate(realBoard, 2, true, save).getSave().getAllMoves();
+        ArrayList<Position> moves = calculate(realBoard, 4, true, save).getSave().getAllMoves();
         realBH = new BoardHelper(realBoard, isWhite, realSave);
         realBH.move(moves.get(moves.size() - 2), moves.get(moves.size() - 1), true);
 
@@ -200,10 +204,12 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         {
             for(int j = 0; j < original.length; j++)
             {
-                newArray[i][j] = original[i][j];
+                if(original[i][j] != null)
+                    newArray[i][j] = original[i][j].copy();
             }
         }
         return newArray;
     }
+
 
 }
