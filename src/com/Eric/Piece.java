@@ -10,16 +10,14 @@ public class Piece
     private ArrayList<Position> validMoves;
     private PieceColor pieceColor;
     private PieceType pieceType;
-    protected Piece[][] board;
     private Position position;
     private int moves = 0;
 
-    public Piece(PieceType pieceType, PieceColor pieceColor, Position position, Piece[][] board)
+    public Piece(PieceType pieceType, PieceColor pieceColor, Position position)
     {
         this.pieceColor = pieceColor;
         this.pieceType = pieceType;
         this.image = DAL.getImage(pieceType, pieceColor);
-        this.board = board;
         this.position = position;
 
     }
@@ -92,5 +90,10 @@ public class Piece
     	else
     		return false;
     	
+    }
+
+    public Piece clone()
+    {
+
     }
 }

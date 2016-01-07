@@ -1,14 +1,8 @@
 package com.Eric;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.nio.Buffer;
 import java.util.ArrayList;
 
 
@@ -17,13 +11,19 @@ public class Screen extends JComponent{
     final int squareSize = 86;
     final int leftInset = 10; // was 450
     final int topInset = 15;
+    final int pawnPromotionLeftInset = leftInset + 165;
+    final int pawnPromotionTopInset = topInset + 302;
     private int x;
     private int y;
     private boolean drawImage = false;
+    private boolean drawPawnPromotion = false;
     BufferedImage image;
     private ArrayList<Element> elementArray;
     Position clickPosition;
     private boolean clicked = false;
+    private Color color1 = new Color(160, 82, 45);
+    private Color color2 = new Color(245, 222, 179);
+    private PieceColor pawnPromotionColor;
     public Screen(){
 
     }
@@ -36,6 +36,10 @@ public class Screen extends JComponent{
         if(elementArray != null)
         {
         	drawElementArray(g);
+        }
+        if(drawPawnPromotion)
+        {
+            drawPawnPromotion(g);
         }
     }
 
@@ -50,17 +54,20 @@ public class Screen extends JComponent{
         g.setColor(color);
         g.drawRect(x, y, width, height);
     }
-    private void drawImage(Graphics g, Image image, int x, int y)
+    private void paintImage(Graphics g, Image image, int x, int y)
     {
         g.drawImage(image, leftInset + (squareSize * y), topInset + (squareSize * x), null);
-        drawImage = false;
     }
-    private Position calculateSquareCoordinate(int mouseX, int mouseY)
+    private void paintImage(Graphics g, Image image, int x, int y, boolean manual)
     {
-        int row = (mouseY - topInset) / squareSize;
-        int column = (mouseX - leftInset) / squareSize;
-        Position pos = new Position(row, column);
-        return pos;
+        if(manual)
+            g.drawImage(image, x, y, null);
+        else
+            g.drawImage(image, leftInset + (squareSize * y), topInset + (squareSize * x), null);
+    }
+    private void paintString(Graphics g, String s, int x, int y)
+    {
+        g.drawString(s, x, y);
     }
     
     public boolean wasClicked()
@@ -100,8 +107,6 @@ public class Screen extends JComponent{
     }
     private Color getTileColor(int x, int y)
     {
-        Color color1 = new Color(160, 82, 45);
-        Color color2 = new Color(245, 222, 179);
         // depending on what tile is chosen, a specific color wll be returned
         Color color;
         if(x % 2 == 0)
@@ -124,14 +129,6 @@ public class Screen extends JComponent{
         Color color = Color.white;
         paintRectangleAndFill(g, 0, 0, getWidth(), getHeight(), color);
     }
-
-    public void drawImage(BufferedImage image, int x, int y)
-    {
-    	drawImage = true;
-    	this.x = x;
-    	this.y = y;
-        this.image = image;
-    }
     public void setElementArray(ArrayList<Element> elementArray)
     {
     	this.elementArray = elementArray;
@@ -141,7 +138,7 @@ public class Screen extends JComponent{
     	for(int i = 0; i < elementArray.size(); i++)
     	{
     		Element e = elementArray.get(i);
-    		drawImage(g, e.getImage(), e.getX(), e.getY());    	
+    		paintImage(g, e.getImage(), e.getX(), e.getY());
     	}
     	
     }
@@ -149,6 +146,27 @@ public class Screen extends JComponent{
     {
     	repaint();
     }
-    
+    public void setDrawPawnPromotion(boolean drawPawnPromotion)
+    {
+        this.drawPawnPromotion = drawPawnPromotion;
+    }
+
+    public void setDrawPawnPromotion(boolean drawPawnPromotion, PieceColor color)
+    {
+        this.drawPawnPromotion = drawPawnPromotion;
+        this.pawnPromotionColor = color;
+        update();
+    }
+    private void drawPawnPromotion(Graphics g)
+    {
+        paintRectangleAndFill(g, pawnPromotionLeftInset, pawnPromotionTopInset, (squareSize * 4) + (5 * 5),20 + squareSize, color2);
+        paintRectangle(g, pawnPromotionLeftInset - 1, pawnPromotionTopInset - 1, (squareSize * 4) + (5*5) + 1, 20 + squareSize + 1, Color.black);
+        paintString(g, "Select piece to promote to.", pawnPromotionLeftInset + 105, pawnPromotionTopInset + 11);
+        paintImage(g, DAL.getImage(PieceType.QUEEN, pawnPromotionColor), pawnPromotionLeftInset + 4, pawnPromotionTopInset + 12, true);
+        paintImage(g, DAL.getImage(PieceType.KNIGHT, pawnPromotionColor), pawnPromotionLeftInset + 4 + squareSize + 5, pawnPromotionTopInset + 12, true);
+        paintImage(g, DAL.getImage(PieceType.ROOK, pawnPromotionColor), pawnPromotionLeftInset + 4 +(squareSize * 2) + 10, pawnPromotionTopInset + 12, true);
+        paintImage(g, DAL.getImage(PieceType.BISHOP, pawnPromotionColor), pawnPromotionLeftInset + 4 + (squareSize * 3) + 15, pawnPromotionTopInset + 12, true);
+
+    }
 
 }

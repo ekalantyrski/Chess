@@ -27,19 +27,43 @@ public class Game {
     MouseAdapter mouseAdapter = new MouseAdapter()
     {
         public void mouseReleased(MouseEvent e) {
-            board.calculate(calculateSquareCoordinate(e.getX(), e.getY()));
-            elementArray = board.getElementArray();
-            screen.setElementArray(elementArray);
-            screen.update();
-            if(board.getCheckStatus() == 2)
+            if(board.getPawnPromotion() == true)
             {
-            	System.out.println("checkmate");
+                PieceType type = getPawnPromotionPiece(e.getX(), e.getY());
+                if(type != null)
+                {
+                    board.setPiece(type);
+                    screen.setDrawPawnPromotion(false);
+                    elementArray = board.getElementArray();
+                    screen.setElementArray(elementArray);
+                    screen.update();
+                }
+            }else {
+                board.calculate(calculateSquareCoordinate(e.getX(), e.getY()));
+                elementArray = board.getElementArray();
+                screen.setElementArray(elementArray);
+                screen.update();
+                if (board.getCheckStatus() == 2) {
+                    System.out.println("checkmate");
+                } else if (board.getCheckStatus() == 1) {
+                    System.out.println("stalemate");
+                }
+
+                if(board.getPawnPromotion() == true)
+                {
+                    int amountOfMoves = save.getSaveSize();
+                    if(amountOfMoves % 2 == 0)
+                    {
+                        screen.setDrawPawnPromotion(true, PieceColor.BLACK);
+                    }
+                    else
+                    {
+                        screen.setDrawPawnPromotion(true, PieceColor.WHITE);
+                    }
+                }
             }
-            else if(board.getCheckStatus() == 1)
-            {
-                System.out.println("stalemate");
-            }
-        };
+
+        }
     };
     
     ActionListener actionListener = new ActionListener()
@@ -59,7 +83,7 @@ public class Game {
                 }
     		}
     		
-    	};
+    	}
     };
 
 
@@ -98,7 +122,7 @@ public class Game {
         menu.add(menuSaveItem);
         menu.add(menuLoadItem);
         
-        menu.addSeparator();
+        //menu.addSeparator();
         
         
         frame.setJMenuBar(menuBar);
@@ -112,5 +136,29 @@ public class Game {
         int column = (mouseX - screen.leftInset) / screen.squareSize;
         Position position = new Position(row, column);
         return position;
+    }
+
+    private PieceType getPawnPromotionPiece(int x, int y)
+    {
+        if(y > screen.pawnPromotionTopInset + 97 || y < screen.pawnPromotionTopInset + 12)
+            return null;
+        else if(x > screen.pawnPromotionLeftInset)
+        {
+            int num = (x - screen.pawnPromotionLeftInset)/(screen.squareSize + 5);
+            switch(num)
+            {
+                case 0:
+                    return PieceType.QUEEN;
+                case 1:
+                    return PieceType.KNIGHT;
+                case 2:
+                    return PieceType.ROOK;
+                case 3:
+                    return PieceType.BISHOP;
+                default:
+                    return null;
+            }
+        }
+        return null;
     }
 }

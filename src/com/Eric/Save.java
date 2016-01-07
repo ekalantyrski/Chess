@@ -23,15 +23,15 @@ public class Save {
 
     public Position getLastMove()
     {
-        if(moves.size() == 0)
-            return null;
-        else
-            return moves.get(moves.size() - 1);
+    	if(moves.size() == 0)
+    		return null;
+    	else
+    		return moves.get(moves.size() - 1);
     }
 
-    public void addMove(Position move)
+    public void addMove(Position oldPosition)
     {
-        moves.add(move);
+        moves.add(oldPosition);
     }
 
     public void save()
@@ -51,5 +51,14 @@ public class Save {
             return  null;
         }
 
+    }
+    public int getSaveSize()
+    {
+        return moves.size();
+    }
+    
+    public ArrayList<Position> getAllMoves()
+    {
+    	return moves;
     }
 }
