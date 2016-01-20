@@ -29,9 +29,10 @@ public class Save {
     		return moves.get(moves.size() - 1);
     }
 
-    public void addMove(Position oldPosition)
+    public void addMove(Position oldPosition, Position newPosition)
     {
         moves.add(oldPosition);
+        moves.add(newPosition);
     }
 
     public void save()
@@ -54,7 +55,7 @@ public class Save {
     }
     public int getSaveSize()
     {
-        return moves.size();
+        return moves.size() / 2;
     }
     
     public ArrayList<Position> getAllMoves()

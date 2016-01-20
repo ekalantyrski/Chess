@@ -1,9 +1,5 @@
 package com.Eric;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import static com.Eric.PieceColor.*;
 import static com.Eric.PieceType.*;
@@ -30,18 +26,26 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     this.isWhite = isWhite;
     this.realSave = save;
 }
-	
+
+
     public void move()
     {
+        long start = System.currentTimeMillis();
     	Save save = new Save();
-        ArrayList<Position> moves = calculate(realBoard, 4, true, save).getSave().getAllMoves();
+    	Score alphaScore = new Score(Integer.MIN_VALUE, new Save());
+    	Score betaScore = new Score(Integer.MAX_VALUE, new Save());
+        Score score = calculate(realBoard, 4, true, save, alphaScore, betaScore);
+        System.out.println("Score attained: " + score.getScore());
+        System.out.println("Time taken: " + (System.currentTimeMillis() - start));
+        ArrayList<Position> moves = score.getSave().getAllMoves();
         realBH = new BoardHelper(realBoard, isWhite, realSave);
         realBH.move(moves.get(moves.size() - 2), moves.get(moves.size() - 1), true);
+        System.gc();
 
     }
 
 
-    private Score calculate(Piece[][] board, int depth, boolean maximizingPlayer, Save save)
+    private Score calculate(Piece[][] board, int depth, boolean maximizingPlayer, Save save, Score alphaScore, Score betaScore)
     {
         if(depth == 0)
         {
@@ -66,28 +70,32 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                     {
                         validMoves = bh.getValidMoves(new Position(i, j));
                         Save newSave = new Save();
-                        newSave.addMove(new Position(i,j));
                         Position oldPosition = new Position(i,j);
                         for(int moves = 0; moves < validMoves.size(); moves++)
                         {
+                            newSave.addMove(new Position(i,j), validMoves.get(moves));
                             newBoard = copyArray(board);
                             BoardHelper newBH = new BoardHelper(newBoard, isWhite, newSave);
                             newBH.move(oldPosition, validMoves.get(moves), true);
-                            newScore = calculate(newBoard, depth - 1, false, newSave);
+                            newScore = calculate(newBoard, depth - 1, false, newSave, alphaScore.copy(), betaScore.copy());
                             
-                            if(newScore.getScore() > maxScore.getScore())
+                            if(newScore.getScore() > alphaScore.getScore())
                             {
                             	maxSave = new Save();
-                            	maxSave.addMove(new Position(i, j));
-                            	maxSave.addMove(newSave.getLastMove());
-                            	maxScore = new Score(newScore.getScore(), maxSave);
+                            	maxSave.addMove(new Position(i, j), newSave.getLastMove());
+                            	alphaScore = new Score(newScore.getScore(), maxSave);
+                            }
+                            
+                            if(betaScore.getScore() <= alphaScore.getScore())
+                            {
+                            	return alphaScore;
                             }
                             	
                         }
                     }
                 }
             }
-            return maxScore;
+            return alphaScore;
 
         }
         else
@@ -104,7 +112,6 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                 {
                     if(board[i][j] != null && board[i][j].getPieceColor() == pc)
                     {
-                        System.out.println(i + " " + j);
                         validMoves = bh.getValidMoves(new Position(i, j));
                         Save newSave = new Save();
                         Position oldPosition = new Position(i,j);
@@ -113,21 +120,25 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                             newBoard = copyArray(board);
                             BoardHelper newBH = new BoardHelper(newBoard, !isWhite, newSave);
                             newBH.move(oldPosition, validMoves.get(moves), true);
-                            newScore = calculate(newBoard, depth - 1, true, newSave);
+                            newScore = calculate(newBoard, depth - 1, true, newSave, alphaScore.copy(),  betaScore.copy());
                             
-                            if(newScore.getScore() < minScore.getScore())
+                            if(newScore.getScore() < betaScore.getScore())
                             {
                             	minSave = new Save();
-                            	minSave.addMove(new Position(i, j));
-                            	minSave.addMove(newSave.getLastMove());
-                            	minScore = new Score(newScore.getScore(), minSave);
+                            	minSave.addMove(new Position(i, j), newSave.getLastMove());
+                            	betaScore = new Score(newScore.getScore(), minSave);
+                            }
+                            
+                            if(betaScore.getScore() <= alphaScore.getScore())
+                            {
+                            	return betaScore;
                             }
                             	
                         }
                     }
                 }
             }
-            return minScore;	
+            return betaScore;	
         }
     }
 
@@ -136,6 +147,8 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         int score = 0;
         score += (1 * getAllMoves(isWhite, save, board).size());
         score += getPieceDifference(board);
+        //middle control
+        //pawn structure
 
         return score;
     }
@@ -210,6 +223,11 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         }
         return newArray;
     }
-
+    
+    //private int calculateMiddleControl(boolean isWhite)
+    //{
+    	//PieceColor pc = (isWhite) ? WHITE : BLACK;
+    	
+    //}
 
 }

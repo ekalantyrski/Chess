@@ -32,13 +32,6 @@ public class Position {
     {
         return x;
     }
-    public String getAlgebraRepresentation()
-    {
-        StringBuilder s = new StringBuilder();
-        s.append(getColumnLetter(y));
-        s.append(x + 1);
-        return s.toString();
-    }
 
     public boolean equals(Position position)
     {

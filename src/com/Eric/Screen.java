@@ -9,37 +9,39 @@ import java.util.ArrayList;
 public class Screen extends JComponent{
 
     final int squareSize = 86;
-    final int leftInset = 10; // was 450
-    final int topInset = 15;
+    final int leftInset = 1; // was 450
+    final int topInset = 1;
     final int pawnPromotionLeftInset = leftInset + 165;
     final int pawnPromotionTopInset = topInset + 302;
-    private int x;
-    private int y;
-    private boolean drawImage = false;
     private boolean drawPawnPromotion = false;
-    BufferedImage image;
+    private boolean drawGameTypeScreen = false;
     private ArrayList<Element> elementArray;
-    Position clickPosition;
-    private boolean clicked = false;
     private Color color1 = new Color(160, 82, 45);
     private Color color2 = new Color(245, 222, 179);
     private PieceColor pawnPromotionColor;
     public Screen(){
-
+    
     }
     @Override
     protected void paintComponent(Graphics g)
     {
         super.paintComponent(g);
-        paintBackground(g);
-        paintBoard(g);
-        if(elementArray != null)
+        if(drawGameTypeScreen)
         {
-        	drawElementArray(g);
+            drawGameTypeScreen(g);
+            
         }
-        if(drawPawnPromotion)
+        else 
         {
-            drawPawnPromotion(g);
+           
+            if (elementArray != null) {
+            	 paintBackground(g);
+                 paintBoard(g);
+                drawElementArray(g);
+            }
+            if (drawPawnPromotion) {
+                drawPawnPromotion(g);
+            }
         }
     }
 
@@ -67,30 +69,11 @@ public class Screen extends JComponent{
     }
     private void paintString(Graphics g, String s, int x, int y)
     {
+        g.setFont(new Font("Arial", Font.BOLD, 15));
+        g.setColor(Color.black);
         g.drawString(s, x, y);
     }
-    
-    public boolean wasClicked()
-    {
-        System.out.println(clicked);
-        if(clicked)
-    	{
-            return true;
-    	}
-    	else
-    	{
-            return false;
-    	}
-    }
-    
-    public Position getClickPosition()
-    {
-    	return clickPosition;
-    }
-    private void setClickPosition(Position clickPosition)
-    {
-        this.clickPosition = clickPosition;
-    }
+
     private void paintBoard(Graphics g)
     {
         Color color;
@@ -103,7 +86,7 @@ public class Screen extends JComponent{
                 paintRectangleAndFill(g, leftInset + (squareSize * j), topInset + (squareSize * i), squareSize, squareSize, color);
             }
         }
-        paintRectangle(g, leftInset - 1, topInset - 1, (squareSize * 8) + 1, (squareSize * 8) + 1, Color.black);
+        paintRectangle(g, leftInset - 1, topInset - 1, (squareSize * 8) + 1, (squareSize * 8) + 1, Color.black); // black border
     }
     private Color getTileColor(int x, int y)
     {
@@ -168,5 +151,23 @@ public class Screen extends JComponent{
         paintImage(g, DAL.getImage(PieceType.BISHOP, pawnPromotionColor), pawnPromotionLeftInset + 4 + (squareSize * 3) + 15, pawnPromotionTopInset + 12, true);
 
     }
+    
+    public void createGameTypeScreen(boolean value)
+    {
+    	this.drawGameTypeScreen = value;
+    }
+    
+    private void drawGameTypeScreen(Graphics g)
+    {
+    	paintRectangleAndFill(g, leftInset, topInset, (squareSize * 8), (squareSize * 8), color2); // fills whole screen
+    	paintImage(g, DAL.getTitleImage(), 105, 86, true);
+        paintString(g, "Choose the way you want to play!", 225, 250);
+        paintRectangle(g, 105, 345, 215, 155, Color.BLACK); // vs Friend Square
+        paintRectangle(g, 370, 345, 215, 155, Color.BLACK); // vs Computer Square
+        paintString(g, "Play vs a friend", 160, 425);
+        paintString(g, "Play vs the computer", 410, 425);
+    }
+    
+    
 
 }

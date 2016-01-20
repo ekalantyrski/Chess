@@ -21,4 +21,9 @@ public class Score {
     public int getScore() {
         return score;
     }
+    
+    public Score copy()
+    {
+    	return new Score(score, save);
+    }
 }

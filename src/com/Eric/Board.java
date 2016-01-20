@@ -14,29 +14,28 @@ public class Board
     private Piece[][] board;
 	private BufferedImage possibleMovesImage;
 	private Position currentPosition;
-	private Position clickedPosition;
-	private int globalModifier;
 	private boolean flipBoard;
     private boolean whiteTurn;
 	private int checkStatus;
-	private boolean pawnPromotion;
 	private Save save;
     private BoardHelper bh;
     private AI ai;
-    public Board(boolean whiteStart, Save save)
+	private boolean usingAI;
+
+    public Board(boolean whiteStart, Save save, boolean usingAI)
     {
         board = new Piece[8][8];
         createPieces(whiteStart);
 		possibleMovesImage = DAL.getPossibleMovesImage();
-		globalModifier = (whiteStart) ? -1 : 1;
         whiteTurn = whiteStart;
 		checkStatus = 0;
-		pawnPromotion = false;
 		this.save = save;
-        bh = new BoardHelper(board, whiteStart, save);
-        createAI(!whiteTurn);
-        if(!whiteTurn)
-        	ai.move();
+        bh = new BoardHelper(board, whiteStart, this.save);
+		this.usingAI = usingAI;
+		if(usingAI)
+		{
+			createAI();
+		}
     }
 
     private void createPieces(boolean whiteStart)
@@ -51,7 +50,7 @@ public class Board
         createKnights();
         if(!whiteStart)
         {
-        	flipBoard();
+        	//flipBoard();
         }
         
     }
@@ -117,11 +116,6 @@ public class Board
 		}
 
 	}
-	//returns image of piece at x and y
-    public BufferedImage getImage(int x, int y)
-    {
-        return board[x][y].getImage();
-    }
 
 	//creates a new element array
 	//iterates through board array finding all pieces
@@ -135,27 +129,27 @@ public class Board
     		{
     			if(board[i][j] != null)
     			{
-    				elementArray.add(new Element(getImage(i, j), i, j));
+    				elementArray.add(new Element(DAL.getImage(board[i][j].getPieceType(), board[i][j].getPieceColor()), i, j));
     			}
     		}
     	
     }
     
     public ArrayList<Element> calculate(Position clickedPosition) {
-		this.clickedPosition = clickedPosition;
             if (isValidMove(clickedPosition)) {
-                bh.move(currentPosition, clickedPosition, false);
-                if(flipBoard)
-                {
-                    flipBoard();
-                }
+				if(usingAI)
+				{
+					bh.move(currentPosition, clickedPosition, false);
+					ai.move();
+				}
+				else
+				{
+					bh.move(currentPosition, clickedPosition, true);
+					whiteTurn ^= true;
+				}
+				checkStatus();
                 validMoves = null;
-                createElementArray();
-                PieceColor color = (whiteTurn) ? WHITE : BLACK;
-                //whiteTurn ^= true;
                 currentPosition = null;
-                ai.move();
-				checkStatus = bh.checkCheck(color);
 				createElementArray();
 			} else {
                 if(isValidColor(clickedPosition, whiteTurn)) {
@@ -216,24 +210,7 @@ public class Board
 	{
 		return checkStatus;
 	}
-	
-	public void setSave(Save save)
-	{
-		this.save = save;
-		createElementArray();
-	}
 
-	private boolean isPawnPromotable(Position clickedPosition)
-	{
-		PieceColor pc = board[currentPosition.getX()][currentPosition.getY()].getPieceColor();
-		if(pc == BLACK && clickedPosition.getX() == 7)
-			return true;
-		else if(pc == WHITE && clickedPosition.getX() == 0)
-			return true;
-		else
-			return false;
-
-	}
 	public boolean getPawnPromotion()
 	{
 		return bh.getPawnPromotion();
@@ -248,44 +225,29 @@ public class Board
 	}
 
 
-    private boolean isValidMove(Position clickedPosition)
-    {
-        if(validMoves == null) {
-            return false;
-        }
-        else
-        {
-            for(int i = 0; i < validMoves.size(); i++)
-            {
-                if(validMoves.get(i).equals(clickedPosition))
-                    return true;
-            }
-            return false;
-        }
+    private boolean isValidMove(Position clickedPosition) {
+		if (validMoves == null) {
+			return false;
+		} else {
+			for (int i = 0; i < validMoves.size(); i++) {
+				if (validMoves.get(i).equals(clickedPosition))
+					return true;
+			}
+			return false;
+		}
 
-    }
+	}
 
+	public void checkStatus()
+	{
+		PieceColor color = (whiteTurn) ? BLACK : WHITE;
+		checkStatus = bh.checkCheck(color);
+	}
 
-    private boolean isNull(Position position) {
-        //checks if a
-        if (board[position.getX()][position.getY()] == null) {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    
-    public void updateElementArray()
-    {
-    	createElementArray();
-    }
-    
-    private void createAI(boolean whiteTurn)
-    {
-    	ai = new AI(board, whiteTurn, save);
-    }
+	private void createAI()
+	{
+		this.ai = new AI(board, !whiteTurn, save);
+	}
 }
 
 

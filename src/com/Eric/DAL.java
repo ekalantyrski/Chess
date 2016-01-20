@@ -6,6 +6,10 @@ import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
+import com.sun.media.jfxmedia.Media;
+
+import java.applet.Applet;
+import java.applet.AudioClip;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
@@ -14,7 +18,14 @@ public class DAL {
     static BufferedImage[] icons;
     static BufferedImage possibleMovesImage;
     static JFileChooser fc = new JFileChooser();
-    public static void load()
+    static BufferedImage titleImage;
+    static AudioClip moveSound;
+
+    public DAL()
+    {
+        load();
+    }
+    public void load()
     {
         //loads black Icons
         PieceType[] array = PieceType.values();
@@ -25,6 +36,7 @@ public class DAL {
             try {
                 File file = new File(Piece.getImageFilePath(array[i], PieceColor.BLACK));
                 icons[i] = ImageIO.read(file);
+                //icons[i] = ImageIO.read(getClass().getResourceAsStream(Piece.getImageFilePath(array[i], PieceColor.BLACK)));
             }catch (IOException e)
             {
                 e.printStackTrace();
@@ -36,6 +48,7 @@ public class DAL {
             try {
                 File file = new File(Piece.getImageFilePath(array[i], PieceColor.WHITE));
                 icons[array.length + i] = ImageIO.read(file);
+                //icons[array.length + i] = ImageIO.read(getClass().getResource(Piece.getImageFilePath(array[i], PieceColor.WHITE)));
             }catch (IOException e)
             {
                 e.printStackTrace();
@@ -46,11 +59,21 @@ public class DAL {
         {
             File file = new File("Data/CIRCLE_RED.png");
             possibleMovesImage = ImageIO.read(file);
+            //possibleMovesImage = ImageIO.read(getClass().getResource("Data/CIRCLE_RED.png"));
         }catch(IOException e)
         {
             e.printStackTrace();
         }
-
+        try
+        {
+        	File file = new File("Data/Title.png");
+            titleImage = ImageIO.read(file);
+        	//titleImage = ImageIO.read(getClass().getResource("Data/Title.png"));
+        }catch(IOException ioe)
+        {
+        	ioe.printStackTrace();
+        }
+       
     }
     
     public static ArrayList<Position> getMoves()
@@ -93,5 +116,13 @@ public class DAL {
     {
         int num = pieceType.ordinal() + (PieceType.values().length * pieceColor.ordinal());
         return icons[num];
+    }
+    public static BufferedImage getTitleImage()
+    {
+    	return titleImage;
+    }
+    public static AudioClip getMoveAudio()
+    {
+    	return moveSound;
     }
 }

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 
 public class Piece
 {
-    private BufferedImage image;
     private PieceColor pieceColor;
     private PieceType pieceType;
     private Position position;
@@ -17,23 +16,16 @@ public class Piece
     {
         this.pieceColor = pieceColor;
         this.pieceType = pieceType;
-        this.image = DAL.getImage(pieceType, pieceColor);
         this.position = position;
 
     }
 
-    private Piece(PieceType pieceType, PieceColor pieceColor, Position position, BufferedImage image, int moves)
+    private Piece(PieceType pieceType, PieceColor pieceColor, Position position, int moves)
     {
         this.pieceColor = pieceColor;
         this.pieceType = pieceType;
         this.position = position;
         this.moves = moves;
-        this.image = image;
-    }
-
-    public BufferedImage getImage()
-    {
-        return image;
     }
 
     public static String getImageFilePath(PieceType pieceType, PieceColor pieceColor)
@@ -72,10 +64,6 @@ public class Piece
     {
     	return pieceColor;
     }
-    protected Position getPosition()
-    {
-    	return position;
-    }
     protected PieceType getPieceType()
     {
         return pieceType;
@@ -91,18 +79,10 @@ public class Piece
     {
         moves++;
     }
-    
-    protected boolean isOutOfBounds(Position position)
-    {
-    	if(position.getX() > 7 || position.getX() < 0 || position.getY() > 7 || position.getY() < 0)
-    		return true;
-    	else
-    		return false;
-    	
-    }
+
 
     public Piece copy()
     {
-        return new Piece(pieceType, pieceColor, position, image, moves);
+        return new Piece(pieceType, pieceColor, position, moves);
     }
 }

@@ -15,12 +15,15 @@ public class BoardHelper {
     private ArrayList<Position> validMoves;
     private boolean pawnPromotion;
     private Position newPosition;
+    private int blackPieceCount;
+    private int whitePieceCount;
 
     public BoardHelper(Piece[][] board, boolean whiteTurn, Save save) {
         this.board = board;
         globalModifier = (whiteTurn) ? -1 : 1;
         this.save = save;
         pawnPromotion = false;
+        countPieces();
     }
 
     public ArrayList<Position> getValidMoves(Position currentPosition) {
@@ -173,6 +176,7 @@ public class BoardHelper {
         tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (-1 * globalModifier));
         if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
             moves.add(tempPosition);
+
         //castling
         if (board[currentPosition.getX()][currentPosition.getY()].amountOfMoves() == 0) {
             //king side castle
@@ -331,20 +335,6 @@ public class BoardHelper {
     }
 
 
-    private boolean isValidMove(Position clickedPosition) {
-        if (validMoves == null) {
-            return false;
-        } else {
-            for (int i = 0; i < validMoves.size(); i++) {
-                if (validMoves.get(i).equals(clickedPosition))
-                    return true;
-            }
-            return false;
-        }
-
-    }
-
-
     private boolean isNull(Position position) {
         //checks if a
         if (board[position.getX()][position.getY()] == null) {
@@ -390,8 +380,9 @@ public class BoardHelper {
             tempPiece = board[tempPosition.getX()][tempPosition.getY()];
             board[tempPosition.getX()][tempPosition.getY()] = board[actualPosition.getX()][actualPosition.getY()];
             board[actualPosition.getX()][actualPosition.getY()] = null;
-            for (int i = 0; i < board.length && count < 16 && !positionRemoved; i++) {
-                for (int j = 0; j < board[i].length && count < 16 && !positionRemoved; j++) {
+            int pieceCount = (globalModifier == 1) ? blackPieceCount : whitePieceCount;
+            for (int i = 0; i < board.length && count < pieceCount && !positionRemoved; i++) {
+                for (int j = 0; j < board[i].length && count < pieceCount && !positionRemoved; j++) {
                     if (board[i][j] != null && board[i][j].getPieceColor() != pc) {
                         count++;
                         currentPosition = new Position(i, j);
@@ -427,7 +418,6 @@ public class BoardHelper {
 
 
     public int checkCheck(PieceColor pc) {
-        globalModifier *= -1;
         ArrayList<Position> validMoves;
         Position tempPosition = currentPosition;
         //gets all possible moves for other team
@@ -441,7 +431,6 @@ public class BoardHelper {
 
             }
         }
-        globalModifier *= -1;
         // if amount of moves is 0, checks if the king can be attacked by current team
         if (validMoves.size() == 0) {
             validMoves = new ArrayList<>();
@@ -520,12 +509,22 @@ public class BoardHelper {
     private void removeInvalidCastle() {
         if (board[currentPosition.getX()][currentPosition.getY()].getPieceType() == KING && board[currentPosition.getX()][currentPosition.getY()].amountOfMoves() == 0) {
             Position tempPosition = new Position(currentPosition.getX(), 5);
+            //king side
             if (isPositionAttackable(tempPosition)) {
                 removePosition(validMoves, new Position(currentPosition.getX(), 6));
             }
+            //queen side
             tempPosition = new Position(currentPosition.getX(), 3);
             Position tempPosition2 = new Position(currentPosition.getX(), 1);
             if (isPositionAttackable(tempPosition) || isPositionAttackable(tempPosition2)) {
+                removePosition(validMoves, new Position(currentPosition.getX(), 2));
+            }
+
+            //if king is in check
+            tempPosition = new Position(currentPosition.getX(), 4);
+            if(isPositionAttackable(tempPosition))
+            {
+                removePosition(validMoves, new Position(currentPosition.getX(), 6));
                 removePosition(validMoves, new Position(currentPosition.getX(), 2));
             }
         }
@@ -548,11 +547,20 @@ public class BoardHelper {
     	this.newPosition = newPosition;
     	if(board[oldPosition.getX()][oldPosition.getY()].getPieceType() == PAWN)
     	{
-    		if(board[newPosition.getX()][newPosition.getX()] == null && newPosition.getY() != oldPosition.getY())
+
+    		if(board[newPosition.getX()][newPosition.getX()] == null && newPosition.getY() != oldPosition.getY() && isEnPassant(new Position(newPosition.getX() - (1 * globalModifier), newPosition.getY()))) // enpassant
     		{
+    			if(board[newPosition.getX() - (1 * globalModifier)][newPosition.getY()].getPieceColor() == BLACK)
+    			{
+    				blackPieceCount--;
+    			}
+    			else
+    			{
+    				whitePieceCount--;
+    			}
     			board[newPosition.getX() - (1 * globalModifier)][newPosition.getY()] = null;
     		}
-    		else if(newPosition.getX() == 0 || newPosition.getX() == 7)
+    		if(newPosition.getX() == 0 || newPosition.getX() == 7)
     		{
     			pawnPromotion = true;
     		}
@@ -571,12 +579,22 @@ public class BoardHelper {
     			board[newPosition.getX()][0] = null;
     		}
     	}
-    	
+    	if(board[newPosition.getX()][newPosition.getY()] != null)
+    	{
+    		if(board[newPosition.getX()][newPosition.getY()].getPieceColor() == BLACK)
+    		{
+    			blackPieceCount--;
+    		}
+    		else
+    		{
+    			whitePieceCount--;
+    		}
+    	}
     	board[newPosition.getX()][newPosition.getY()] = board[oldPosition.getX()][oldPosition.getY()];
     	board[oldPosition.getX()][oldPosition.getY()] = null;
     	board[newPosition.getX()][newPosition.getY()].moved();
     	board[newPosition.getX()][newPosition.getY()].setPosition(newPosition);
-    	save.addMove(newPosition);
+    	save.addMove(oldPosition, newPosition);
         if(toggle)
     	    toggleGlobalModifier();
     	
@@ -594,6 +612,30 @@ public class BoardHelper {
     	PieceColor pc = (globalModifier == 1) ? WHITE : BLACK;
 		board[newPosition.getX()][newPosition.getY()] = new Piece(pt, pc, newPosition);
 		pawnPromotion = false;
+    	
+    }
+    
+    private void countPieces()
+    {
+    	blackPieceCount = 0;
+    	whitePieceCount = 0;
+    	for(int i = 0; i < board.length; i++)
+    	{
+    		for(int j = 0; j < board[i].length; j++)
+    		{
+    			if(board[i][j] != null)
+    			{
+    				if(board[i][j].getPieceColor() == BLACK)
+    				{
+    					blackPieceCount++; 
+    				}
+    				else
+    				{
+    					whitePieceCount++;
+    				}
+    			}
+    		}
+    	}
     	
     }
 }

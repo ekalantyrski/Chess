@@ -22,47 +22,69 @@ public class Game {
     private boolean flipBoard;
     private ArrayList<Element> elementArray = null;
     private Save save;
-    private JMenuItem menuSaveItem, menuLoadItem;
-
+    private JMenuItem menuSaveItem, menuLoadItem, menuNewGame;
+    private int gameType; // 1 = 1v1, 2 = AI
+    private AI ai;
+    
+    private Runtime runtime;
+    
     MouseAdapter mouseAdapter = new MouseAdapter()
     {
         public void mouseReleased(MouseEvent e) {
-            if(board.getPawnPromotion() == true)
-            {
-                PieceType type = getPawnPromotionPiece(e.getX(), e.getY());
-                if(type != null)
+            if (board == null) {
+                gameType = getGameType(e.getX(), e.getY());
+                if (gameType != 0)
                 {
-                    board.setPiece(type);
-                    screen.setDrawPawnPromotion(false);
+                    switch (gameType) {
+                        case 1:
+                            board = new Board(true, save, false);
+                            screen.createGameTypeScreen(false);
+                            break;
+                        case 2:
+                            board = new Board(true, save, true);
+                            screen.createGameTypeScreen(false);
+                            break;
+                    }
+
                     elementArray = board.getElementArray();
                     screen.setElementArray(elementArray);
                     screen.update();
                 }
-            }else {
-                board.calculate(calculateSquareCoordinate(e.getX(), e.getY()));
-                elementArray = board.getElementArray();
-                screen.setElementArray(elementArray);
-                screen.update();
-                if (board.getCheckStatus() == 2) {
-                    System.out.println("checkmate");
-                } else if (board.getCheckStatus() == 1) {
-                    System.out.println("stalemate");
-                }
-
-                if(board.getPawnPromotion() == true)
-                {
-                    int amountOfMoves = save.getSaveSize();
-                    if(amountOfMoves % 2 == 0)
-                    {
-                        screen.setDrawPawnPromotion(true, PieceColor.BLACK);
-                    }
-                    else
-                    {
-                        screen.setDrawPawnPromotion(true, PieceColor.WHITE);
-                    }
-                }
             }
+            else
+            {
+                if (board.getPawnPromotion() == true) {
+                    PieceType type = getPawnPromotionPiece(e.getX(), e.getY());
+                    if (type != null) {
+                        board.setPiece(type);
+                        screen.setDrawPawnPromotion(false);
+                        elementArray = board.getElementArray();
+                        screen.setElementArray(elementArray);
+                        screen.update();
+                    }
+                } else
+                {
+                    board.calculate(calculateSquareCoordinate(e.getX(), e.getY()));
+                    elementArray = board.getElementArray();
+                    screen.setElementArray(elementArray);
+                    screen.update();
+                    if (board.getCheckStatus() == 2) {
+                        System.out.println("checkmate");
+                    } else if (board.getCheckStatus() == 1) {
+                        System.out.println("stalemate");
+                    }
 
+                    if (board.getPawnPromotion() == true) {
+                        int amountOfMoves = save.getSaveSize();
+                        if (amountOfMoves % 2 == 0) {
+                            screen.setDrawPawnPromotion(true, PieceColor.BLACK);
+                        } else {
+                            screen.setDrawPawnPromotion(true, PieceColor.WHITE);
+                        }
+                    }
+                }
+
+            }
         }
     };
     
@@ -79,8 +101,13 @@ public class Game {
                 Save newSave = Save.createNewSave();
                 if(newSave != null)
                 {
-                    board.setSave(newSave);
+
                 }
+    		}
+    		else if(e.getSource() == menuNewGame)
+    		{
+    			createGameTypeScreen();
+                board = null;
     		}
     		
     	}
@@ -90,15 +117,11 @@ public class Game {
     public Game()
     {
         createWindow();
-        DAL.load();
+        DAL dal = new DAL();
         save = new Save();
-        board = new Board(true, save);
-        whiteTurn = true;
-        flipBoard = false;
-        board.setFlipBoard(flipBoard);
-        screen.setElementArray(board.getElementArray());
-        screen.update();
         screen.addMouseListener(mouseAdapter);
+        createGameTypeScreen();
+        runtime = Runtime.getRuntime();
     }
 
     private void createWindow() {
@@ -108,17 +131,21 @@ public class Game {
         frame.setLocationRelativeTo(null); //centers the window
         frame.setResizable(false);
         screen = new Screen();
-        screen.setPreferredSize(new Dimension(720, 720));
+        screen.setPreferredSize(new Dimension(690,690));
         frame.add(screen);
         JMenuBar menuBar = new JMenuBar();
         JMenu menu = new JMenu("File");
         menuBar.add(menu);
+        menuNewGame = new JMenuItem("New Game");
         menuSaveItem = new JMenuItem("Save");
         menuLoadItem = new JMenuItem("Load");
         
+        menuNewGame.addActionListener(actionListener);
         menuSaveItem.addActionListener(actionListener);
         menuLoadItem.addActionListener(actionListener);
 
+        menu.add(menuNewGame);
+        menu.addSeparator();
         menu.add(menuSaveItem);
         menu.add(menuLoadItem);
         
@@ -160,5 +187,21 @@ public class Game {
             }
         }
         return null;
+    }
+    
+    private void createGameTypeScreen()
+    {
+    	screen.createGameTypeScreen(true);
+    	screen.update();
+    }
+    
+    private int getGameType(int x, int y)
+    {
+        if(y > 500 || y < 345)
+            return 0;
+        else if (x < 105 || (x > 320 && x < 370) || x > 585)
+            return 0;
+        else
+    	    return(x - 105)/(215 + 50) + 1;
     }
 }
