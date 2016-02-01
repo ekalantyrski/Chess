@@ -1,27 +1,44 @@
 package com.Eric;
 
 /**
- * Created by Felix on 1/3/2016.
+ * Created by Eric on 1/3/2016.
  */
 public class Score {
 
-    private int score;
-    private Save save;
+    private int score; // score attained
+    private Save save; // moves that happened
 
+    /**
+     * Constructor
+     * @param score The score given
+     * @param save The Save of the moves
+     */
     public Score(int score, Save save)
     {
         this.score = score;
         this.save = save;
     }
 
+    /**
+     * Returns the save
+     * @return save
+     */
     public Save getSave() {
         return save;
     }
 
+    /**
+     * Returns the score
+     * @return score
+     */
     public int getScore() {
         return score;
     }
-    
+
+    /**
+     * Creates a deep copy of this instance and returns it
+     * @return a deep copy of Score
+     */
     public Score copy()
     {
     	return new Score(score, save);

@@ -1,38 +1,48 @@
 package com.Eric;
 
 public class Position {
-    private int x;
-    private int y;
-    private int specialMove;
-
+    private int x; // x coordinate
+    private int y; // y coordinate
+    /**
+     * Constructor
+     * @param x x coordinate
+     * @param y y coordinate
+     */
     public Position(int x, int y)
     {
         this.x = x;
         this.y = y;
-        specialMove = 0;
     }
+    /**
+     * Constructor to create piece from String value
+     * @param move The value given
+     */
     public Position(String move)
     {
-        if(isPawnMove(move))
-        {
-            this.x = (int)move.charAt(1) - 65;
-            this.y = (int)move.charAt(0) - 65;
-        }
-        else
-        {
-            this.x = (int)move.charAt(2) - 65;
-            this.y = (int)move.charAt(1) - 65;
-        }
+        this.x = ((int)move.charAt(1)) - 48;
+        this.y = ((int)move.charAt(0)) - 97;
     }
+    /**
+     * Returns y value
+     * @return y
+     */
     public int getY()
     {
         return y;
     }
+    /**
+     * Returns x value
+     * @return x
+     */
     public int getX()
     {
         return x;
     }
-
+    /**
+     * Checks if a position equals another position
+     * @param position The position to check
+     * @return Returns boolean value based on calculations
+     */
     public boolean equals(Position position)
     {
         if(position == null)
@@ -42,32 +52,21 @@ public class Position {
         else
             return false;
     }
-
+    /**
+     * Gets the char of the column letter for a given column
+     * @param column The column given
+     * @return The char letter attained
+     */
     private char getColumnLetter(int column)
     {
         return (char)(97 + column);
     }
-
-    public void setSpecialMove(int move)
+    /**
+     * Creates a string from the x and y coordinate
+     * @return Return the string
+     */
+    public String toString()
     {
-        //0 = no special moves
-        //1 = en passant
-        //2 = king side castle
-        //3 = queen side castle
-        this.specialMove = move;
-    }
-
-    private boolean isPawnMove(String move)
-    {
-        char x = move.charAt(0);
-        if(x == 'a' || x == 'b' || x == 'c' || x == 'd' || x == 'e' || x == 'f' || x == 'g' || x == 'h')
-            return true;
-        else
-            return false;
-    }
-
-    public int getSpecialMove()
-    {
-        return specialMove;
+        return getColumnLetter(y) + "" + x;
     }
 }

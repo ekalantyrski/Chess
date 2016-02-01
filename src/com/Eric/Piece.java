@@ -7,11 +7,16 @@ import java.util.ArrayList;
 
 public class Piece
 {
-    private PieceColor pieceColor;
-    private PieceType pieceType;
-    private Position position;
-    private int moves = 0;
-
+    private PieceColor pieceColor; // Color of piece
+    private PieceType pieceType; // Type of piece
+    private Position position; //Position of piece
+    private int moves = 0; // How many moves 
+    /**
+     * Constructor
+     * @param pieceType The pieceType
+     * @param pieceColor The pieceColor
+     * @param position	 The position of the piece
+     */
     public Piece(PieceType pieceType, PieceColor pieceColor, Position position)
     {
         this.pieceColor = pieceColor;
@@ -19,7 +24,13 @@ public class Piece
         this.position = position;
 
     }
-
+    /**
+     * Constructor used for deep copy
+     * @param pieceType The pieceType
+     * @param pieceColor THe piece Color
+     * @param position	The piece Position
+     * @param moves	How many moves the piece did
+     */
     private Piece(PieceType pieceType, PieceColor pieceColor, Position position, int moves)
     {
         this.pieceColor = pieceColor;
@@ -27,7 +38,13 @@ public class Piece
         this.position = position;
         this.moves = moves;
     }
-
+    /**
+     * Returns a string with the file path to the proper image
+     * Depending on type and color
+     * @param pieceType The pieceType
+     * @param pieceColor The pieceColor
+     * @return	Returns a string with the file path
+     */
     public static String getImageFilePath(PieceType pieceType, PieceColor pieceColor)
     {
         StringBuilder sb = new StringBuilder("Data/");
@@ -59,28 +76,49 @@ public class Piece
 
         return sb.toString();
     }
-    
+    /**
+     * Returns the pieceColor
+     * @return PieceColor
+     */
     protected PieceColor getPieceColor()
     {
     	return pieceColor;
     }
+    /**
+     * Returns the pieceType
+     * @return Return pieceType
+     */
     protected PieceType getPieceType()
     {
         return pieceType;
     }
+    /**
+     * Returns amount of moves
+     * @return amount of moves
+     */
     protected int amountOfMoves()
     {
         return moves;
     }
+    /**
+     * Sets the position to given position
+     * @param position the position to change to
+     */
     protected void setPosition(Position position){
         this.position = position;
     }
+    /**
+     * Increments moves valuye
+     */
     public void moved()
     {
         moves++;
     }
 
-
+    /**
+     * Creates a deep copy of the piece
+     * @return The instance of the deep copy
+     */
     public Piece copy()
     {
         return new Piece(pieceType, pieceColor, position, moves);

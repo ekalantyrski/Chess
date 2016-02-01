@@ -9,11 +9,11 @@ import static com.Eric.PieceType.*;
  */
 public class AI{
 
-    private Piece[][] realBoard;
-    private Save realSave;
-    private boolean isWhite;
-    private BoardHelper realBH;
-    private final int PAWN_VALUE = 10;
+    private Piece[][] realBoard; //this board is not altered until final move is calculated
+    private Save realSave;     //this is save is not altered until final move is calculated
+    private boolean isWhite;    //what side is ai playing as
+    private BoardHelper realBH; //not used until final move is calculated
+    private final int PAWN_VALUE = 10; //values given to calculate the score for a board
     private final int KNIGHT_VALUE = 30;
     private final int BISHOP_VALUE = 30;
     private final int ROOK_VALUE = 50;
@@ -27,66 +27,78 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     this.realSave = save;
 }
 
-
+    /**
+     * Class called when AI is to make a move
+     * Makes variables that are used in calculate method and calls it
+     * Then does the move that is calculated
+     */
     public void move()
     {
-        long start = System.currentTimeMillis();
-    	Save save = new Save();
-    	Score alphaScore = new Score(Integer.MIN_VALUE, new Save());
-    	Score betaScore = new Score(Integer.MAX_VALUE, new Save());
+    	Save save = new Save(1);
+    	Score alphaScore = new Score(Integer.MIN_VALUE, new Save(1));
+    	Score betaScore = new Score(Integer.MAX_VALUE, new Save(1));
         Score score = calculate(realBoard, 4, true, save, alphaScore, betaScore);
-        System.out.println("Score attained: " + score.getScore());
-        System.out.println("Time taken: " + (System.currentTimeMillis() - start));
         ArrayList<Position> moves = score.getSave().getAllMoves();
         realBH = new BoardHelper(realBoard, isWhite, realSave);
         realBH.move(moves.get(moves.size() - 2), moves.get(moves.size() - 1), true);
-        System.gc();
 
     }
 
-
+    /**
+     * A recursive method that calculates what is the best move to do
+     * This method uses the minimax algorithm
+     * Alpha-Beta pruning is implemented ontop of minimax
+     * 
+     * @param board Stores all piece positions
+     * @param depth Determines what depth to go to, decreased each time this method is called recursively
+     * @param maximizingPlayer Keeps track if a specific node is maximizing score, or minimizing score
+     * @param save  The moves that happened in previous itteration
+     * @param alphaScore The alpha score, used for hard cut offs
+     * @param betaScore The beta score, used for hard cut offs.
+     * @return Returns a Score, containing the score chosen and the position to move to.
+     */
     private Score calculate(Piece[][] board, int depth, boolean maximizingPlayer, Save save, Score alphaScore, Score betaScore)
     {
-        if(depth == 0)
+        if(depth == 0) //stopper
         {
-            return new Score(getScore(board, save), save);
+            return new Score(getScore(board, save), save); //gets a board score
         }
         ArrayList<Position> validMoves;
         PieceColor pc;
         BoardHelper bh;
-        if(maximizingPlayer)
+        if(maximizingPlayer) // if this player is maximizing the value
         {
             Piece[][] newBoard;
-        	Save maxSave = new Save();
+        	Save maxSave = new Save(1);
         	Score maxScore = new Score(Integer.MIN_VALUE, maxSave);
         	Score newScore;
             pc = (isWhite) ? WHITE : BLACK;
             bh = new BoardHelper(board, isWhite, save);
-            for(int i = 0; i < board.length; i++)
+            for(int i = 0; i < board.length; i++) // loops through board and finds all pieces of the maximizing players color
             {
                 for(int j = 0; j < board[i].length; j++)
                 {
                     if(board[i][j] != null && board[i][j].getPieceColor() == pc)
                     {
-                        validMoves = bh.getValidMoves(new Position(i, j));
-                        Save newSave = new Save();
+                        validMoves = bh.getValidMoves(new Position(i, j)); // gets all valid moves for this piece
+                        Save newSave = new Save(1);
                         Position oldPosition = new Position(i,j);
-                        for(int moves = 0; moves < validMoves.size(); moves++)
+                        for(int moves = 0; moves < validMoves.size(); moves++) //iterates through moves and makes a move
                         {
                             newSave.addMove(new Position(i,j), validMoves.get(moves));
                             newBoard = copyArray(board);
                             BoardHelper newBH = new BoardHelper(newBoard, isWhite, newSave);
                             newBH.move(oldPosition, validMoves.get(moves), true);
-                            newScore = calculate(newBoard, depth - 1, false, newSave, alphaScore.copy(), betaScore.copy());
+                            newScore = calculate(newBoard, depth - 1, false, newSave, alphaScore.copy(), betaScore.copy()); // calls calculate with new piece position
                             
-                            if(newScore.getScore() > alphaScore.getScore())
+                            if(newScore.getScore() > alphaScore.getScore()) // saves the best score that it got
                             {
-                            	maxSave = new Save();
+                            	maxSave = new Save(1);
                             	maxSave.addMove(new Position(i, j), newSave.getLastMove());
                             	alphaScore = new Score(newScore.getScore(), maxSave);
                             }
                             
-                            if(betaScore.getScore() <= alphaScore.getScore())
+                            if(betaScore.getScore() <= alphaScore.getScore()) // hard alpha cut off
                             {
                             	return alphaScore;
                             }
@@ -98,38 +110,38 @@ public AI(Piece[][] board, boolean isWhite, Save save)
             return alphaScore;
 
         }
-        else
+        else // minmizing player decisions
         {
             Piece[][] newBoard;
-        	Save minSave = new Save();
+        	Save minSave = new Save(1);
         	Score minScore = new Score(Integer.MAX_VALUE, minSave);
         	Score newScore;
             pc = (!isWhite) ? WHITE : BLACK;
             bh = new BoardHelper(board, !isWhite, save);
-            for(int i = 0; i < board.length; i++)
+            for(int i = 0; i < board.length; i++) //loops through board finding pieces of minimizing player
             {
                 for(int j = 0; j < board[i].length; j++)
                 {
                     if(board[i][j] != null && board[i][j].getPieceColor() == pc)
                     {
-                        validMoves = bh.getValidMoves(new Position(i, j));
-                        Save newSave = new Save();
+                        validMoves = bh.getValidMoves(new Position(i, j)); //  generates all moves for piece found
+                        Save newSave = new Save(1);
                         Position oldPosition = new Position(i,j);
-                        for(int moves = 0; moves < validMoves.size(); moves++)
+                        for(int moves = 0; moves < validMoves.size(); moves++) // iterates through all moves, and makes that move
                         {
                             newBoard = copyArray(board);
                             BoardHelper newBH = new BoardHelper(newBoard, !isWhite, newSave);
                             newBH.move(oldPosition, validMoves.get(moves), true);
-                            newScore = calculate(newBoard, depth - 1, true, newSave, alphaScore.copy(),  betaScore.copy());
+                            newScore = calculate(newBoard, depth - 1, true, newSave, alphaScore.copy(),  betaScore.copy()); // calls calculate with new piece positions
                             
-                            if(newScore.getScore() < betaScore.getScore())
+                            if(newScore.getScore() < betaScore.getScore()) // saves the worst move it got
                             {
-                            	minSave = new Save();
+                            	minSave = new Save(1);
                             	minSave.addMove(new Position(i, j), newSave.getLastMove());
                             	betaScore = new Score(newScore.getScore(), minSave);
                             }
                             
-                            if(betaScore.getScore() <= alphaScore.getScore())
+                            if(betaScore.getScore() <= alphaScore.getScore()) // hard beta cut off
                             {
                             	return betaScore;
                             }
@@ -142,37 +154,56 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         }
     }
 
+    /**
+     * Determines a heuristic score from the view of the maximizing player
+     *
+     * This is quite weak right now
+     *
+     * @param board The given board to calculate
+     * @param save The previous moves that happened
+     * @return Returns a score that was caclulated
+     */
     private int getScore(Piece[][] board, Save save)
     {
         int score = 0;
         score += (1 * getAllMoves(isWhite, save, board).size());
         score += getPieceDifference(board);
-        //middle control
-        //pawn structure
 
         return score;
     }
 
-
+    /**Returns all moves possible by maximizing player
+     *
+     * @param whiteTurn Used to determine who is maximizing player
+     * @param save The previous moves that happened
+     * @param board Position of all pieces
+     * @return Returns the score calculated
+     */
     private ArrayList<Position> getAllMoves(boolean whiteTurn, Save save, Piece[][] board)
     {
         ArrayList<Position> validMoves = new ArrayList<>();
         BoardHelper bh = new BoardHelper(board, whiteTurn, save);
         PieceColor pc = (whiteTurn) ? WHITE : BLACK;
-        for(int i = 0; i < board.length; i++)
+        for(int i = 0; i < board.length; i++) // Loops through whole board
         {
             for(int j = 0; j < board[i].length; j++)
             {
-                if(board[i][j] != null && board[i][j].getPieceColor() == pc)
+                if(board[i][j] != null && board[i][j].getPieceColor() == pc) // Piece found
                 {
                     Position position = new Position(i, j);
-                    validMoves.addAll(bh.getValidMoves(position));
+                    validMoves.addAll(bh.getValidMoves(position)); // Adds all moves to current moves
                 }
             }
         }
         return validMoves;
     }
 
+    /**
+     * Gets the score difference of all pieces
+     *
+     * @param board All piece positions
+     * @return Returns score calculated
+     */
     private int getPieceDifference(Piece[][] board)
     {
         int difference = 0;
@@ -186,6 +217,16 @@ public AI(Piece[][] board, boolean isWhite, Save save)
 
     }
 
+    /**
+     *Calculates how many pieces the maximizing player has vs the minimizing player
+     * ex. Max player has 5 pawns, min player has 4 pawns. Method would return 1
+     *
+     * LOOK THIS ONLY USES ONE VARIABLE TO STORE AND CALCULATE DIFFERENCE OMG OMG OMG
+     *
+     * @param pt Type of piece to find
+     * @param board All piece positions
+     * @return The difference in piece numbers
+     */
     private int calculateDifference(PieceType pt, Piece[][] board)
     {
         PieceColor pc = (isWhite) ? WHITE : BLACK;
@@ -210,6 +251,12 @@ public AI(Piece[][] board, boolean isWhite, Save save)
 
     }
 
+    /**
+     * Creates a deep copy of a given array
+     *
+     * @param original The original array to be copied
+     * @return Returns a new array
+     */
     private Piece[][] copyArray(Piece[][] original)
     {
         Piece[][] newArray = new Piece[original.length][original.length];
@@ -223,11 +270,4 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         }
         return newArray;
     }
-    
-    //private int calculateMiddleControl(boolean isWhite)
-    //{
-    	//PieceColor pc = (isWhite) ? WHITE : BLACK;
-    	
-    //}
-
 }

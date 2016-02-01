@@ -8,15 +8,19 @@ import static com.Eric.PieceType.*;
 
 public class BoardHelper {
 
-    private Piece[][] board;
-    private int globalModifier;
-    private Position currentPosition;
-    private Save save;
+    /*
+    This class is used to modify the board
+    All methods that change the board go here
+     */
+    private Piece[][] board; // The board that is going to be modified
+    private int globalModifier; // Used in calculation of pawns
+    private Position currentPosition; // The currentPosition
+    private Save save; // The save instance used
     private ArrayList<Position> validMoves;
     private boolean pawnPromotion;
     private Position newPosition;
-    private int blackPieceCount;
-    private int whitePieceCount;
+    private int blackPieceCount; // count for black pieces
+    private int whitePieceCount; // count for white pieces
 
     public BoardHelper(Piece[][] board, boolean whiteTurn, Save save) {
         this.board = board;
@@ -26,14 +30,27 @@ public class BoardHelper {
         countPieces();
     }
 
+    /**
+     * Entrance point for other classes to get validMoves
+     * Calls other methods to do calculations
+     *
+     * @param currentPosition The position that was given by the player to get moves from
+     * @return Returns arrayList of all moves
+     */
     public ArrayList<Position> getValidMoves(Position currentPosition) {
         this.currentPosition = currentPosition;
         validMoves = getMoves(board[currentPosition.getX()][currentPosition.getY()].getPieceType());
-        removeInvalidCastle();
-        removeCheckmateMoves(validMoves);
+        removeInvalidCastle(); // Removes invalid castles, has to be here or else indirect recursion crashes program
+        removeCheckmateMoves(validMoves); // Removes all moves that would result in a checkmate the very next turn (illegal)
         return validMoves;
     }
 
+    /**
+     * Given a pieceType, switch statement chooses what moves are possible
+     *
+     * @param pt The pieceType of the move
+     * @return The validMoves for that piece
+     */
     private ArrayList<Position> getMoves(PieceType pt) {
         ArrayList<Position> validMoves = new ArrayList<>();
         switch (pt) {
@@ -60,6 +77,11 @@ public class BoardHelper {
         return validMoves;
     }
 
+    /**
+     * Calculates possible moves for a pawn
+     *
+     * @return The possible moves for a pawn
+     */
     private ArrayList<Position> getPawnValidMoves() {
         Position tempPosition;
         ArrayList<Position> moves = new ArrayList<>();
@@ -81,6 +103,7 @@ public class BoardHelper {
             }
         }
         int yModifier = 1;
+        //checks for diagonal moves
         for (int i = 0; i < 2; i++) {
             tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (1 * yModifier * globalModifier));
             if (!isOutOfBounds(tempPosition) && !isNull(tempPosition)) {
@@ -89,7 +112,7 @@ public class BoardHelper {
                 }
             } else {
                 tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (1 * yModifier * globalModifier));
-                if (isEnPassant(tempPosition)) {
+                if (isEnPassant(tempPosition)) { //checks if a move is enPassant
                     tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (1 * yModifier * globalModifier));
                     moves.add(tempPosition);
                 }
@@ -100,7 +123,11 @@ public class BoardHelper {
         return moves;
     }
 
-
+    /**
+     * Calculates all moves possible for a knight
+     *
+     * @return The moves possible
+     */
     private ArrayList<Position> getKnightValidMoves() {
         ArrayList<Position> moves = new ArrayList<>();
         int modifier = 1;
@@ -110,7 +137,7 @@ public class BoardHelper {
         for (int i = 0; i < 2; i++) {
             yModifier = 1;
             for (int j = 0; j < 2; j++) {
-                tempPosition = new Position(currentPosition.getX() + (2 * modifier * globalModifier), currentPosition.getY() + (1 * yModifier * globalModifier));
+                tempPosition = new Position(currentPosition.getX() + (2 * modifier), currentPosition.getY() + (1 * yModifier));
                 if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition))) {
                     moves.add(tempPosition);
                 }
@@ -124,7 +151,7 @@ public class BoardHelper {
         for (int k = 0; k < 2; k++) {
             yModifier = 1;
             for (int l = 0; l < 2; l++) {
-                tempPosition = new Position(currentPosition.getX() + (1 * modifier * globalModifier), currentPosition.getY() + (2 * yModifier * globalModifier));
+                tempPosition = new Position(currentPosition.getX() + (1 * modifier), currentPosition.getY() + (2 * yModifier));
                 if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition))) {
                     moves.add(tempPosition);
                 }
@@ -135,45 +162,65 @@ public class BoardHelper {
         return moves;
     }
 
+    /**
+     * Gets all moves that a queen can do, calls other functions
+     * And adds those moves
+     *
+     * @return Returns the moves possible
+     */
     private ArrayList<Position> getQueenValidMoves() {
         ArrayList<Position> moves = new ArrayList<>();
-        moves.addAll(getStraightMoves());
-        moves.addAll(getDiagonalMoves());
+        moves.addAll(getStraightMoves()); // gets all moves possible horizontally and vertically
+        moves.addAll(getDiagonalMoves()); // gets all moves possible diagonally
         return moves;
     }
 
+    /**
+     * Gets all moves possible by a rook
+     *
+     * @return The moves possible
+     */
     private ArrayList<Position> getRookValidMoves() {
         return getStraightMoves();
     }
 
+    /**
+     * Gets all moves possible by a bishop
+     *
+     * @return Returns the moves possible
+     */
     private ArrayList<Position> getBishopValidMoves() {
         return getDiagonalMoves();
     }
 
-
+    /**
+     * Gets all moves possible by a king
+     *
+     * @return Returns moves possible
+     */
     private ArrayList<Position> getKingValidMoves() {
         ArrayList<Position> moves = new ArrayList<>();
         int modifier = 1;
         Position tempPosition;
+        // Calculates the tiles adjacent to him
         PieceColor pc = board[currentPosition.getX()][currentPosition.getY()].getPieceColor();
         for (int i = 0; i < 2; i++) {
-            tempPosition = new Position(currentPosition.getX() + (modifier * globalModifier), currentPosition.getY());
+            tempPosition = new Position(currentPosition.getX() + (modifier), currentPosition.getY());
             if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
                 moves.add(tempPosition);
-            tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (modifier * globalModifier));
+            tempPosition = new Position(currentPosition.getX(), currentPosition.getY() + (modifier));
             if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
                 moves.add(tempPosition);
-            tempPosition = new Position(currentPosition.getX() + (modifier * globalModifier), currentPosition.getY() + (modifier * globalModifier));
+            tempPosition = new Position(currentPosition.getX() + (modifier), currentPosition.getY() + (modifier));
             if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
                 moves.add(tempPosition);
             modifier = -1;
 
         }
-
-        tempPosition = new Position(currentPosition.getX() + (-1 * globalModifier), currentPosition.getY() + (1 * globalModifier));
+        tempPosition = new Position(currentPosition.getX() + (-1), currentPosition.getY() + (1));
         if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
             moves.add(tempPosition);
-        tempPosition = new Position(currentPosition.getX() + (1 * globalModifier), currentPosition.getY() + (-1 * globalModifier));
+        tempPosition = new Position(currentPosition.getX() + (1), currentPosition.getY() + (-1));
         if (!isOutOfBounds(tempPosition) && (isNull(tempPosition) || !isFriendlyPiece(tempPosition)))
             moves.add(tempPosition);
 
@@ -197,7 +244,11 @@ public class BoardHelper {
         return moves;
     }
 
-
+    /**
+     * Checks if the King can do a king side castle legally
+     * (not fully, more calculations in getValidMoves method)
+     * @return Returns boolean based on results
+     */
     private boolean checkKingCastleable() {
         Position tempPosition;
         for (int i = 1; i < 3; i++) {
@@ -208,6 +259,11 @@ public class BoardHelper {
         return true;
     }
 
+    /**
+     * Checks if a king can do a queen side castle legally
+     * (not fully, more calculations in getValidMoves method)
+      * @return Returns boolean based on results
+     */
     private boolean checkQueenCastleable() {
         Position tempPosition = null;
         for (int i = 1; i < 4; i++) {
@@ -219,7 +275,11 @@ public class BoardHelper {
         return true;
     }
 
-
+    /**
+     * Calculates all moves that are possible on horizontal or vertical path
+     *
+     * @return The moves possible
+     */
     private ArrayList<Position> getStraightMoves() {
         ArrayList<Position> moves = new ArrayList<>();
         Position tempPosition;
@@ -266,7 +326,11 @@ public class BoardHelper {
         return moves;
     }
 
-
+    /**
+     * Calculates all diagonal moves
+     *
+     * @return Returns moves calculated
+     */
     private ArrayList<Position> getDiagonalMoves() {
         ArrayList<Position> moves = new ArrayList<>();
         int xModifier = 1;
@@ -326,15 +390,34 @@ public class BoardHelper {
         return moves;
     }
 
+    /**
+     * Checks if a specific position just did an enPassant
+     * (pawn just moved to that position, and it was a double move)
+     *
+     * @param position position to check
+     * @return returns boolean based on calculation
+     */
     private boolean isEnPassant(Position position) {
-        if ((save.getLastMove() != null && save.getLastMove().equals(position)) && !isOutOfBounds(position) && !isNull(position) &&
-                board[position.getX()][position.getY()].getPieceType() == PAWN && board[position.getX()][position.getY()].amountOfMoves() == 1)
+        ArrayList<Position> moves = save.getAllMoves();
+        globalModifier *= -1;
+        if ((moves.size() > 0 && moves.get(moves.size() - 1).equals(position) && moves.get(moves.size() - 2).equals(new Position(position.getX()- (2 * globalModifier), position.getY())))
+                && !isOutOfBounds(position) && !isNull(position) && board[position.getX()][position.getY()].getPieceType() == PAWN && board[position.getX()][position.getY()].amountOfMoves() == 1)
+        {
+            globalModifier *= -1;
             return true;
+        }
         else
+        {
+            globalModifier *= -1;
             return false;
+        }
     }
 
-
+    /**
+     * Checks if a given position is null on the board
+     * @param position the position to check
+     * @return returns boolean based on calculation
+     */
     private boolean isNull(Position position) {
         //checks if a
         if (board[position.getX()][position.getY()] == null) {
@@ -344,7 +427,12 @@ public class BoardHelper {
         }
     }
 
-
+    /**
+     * Checks if a piece is friendly to the piece at currentPosition
+     *
+     * @param position position that is checked
+     * @return Returns boolean based on result
+     */
     private boolean isFriendlyPiece(Position position) {
         //returns true if the color of piece at position is same as the color of piece in currentPosition
         //called with isNull
@@ -355,6 +443,12 @@ public class BoardHelper {
 
     }
 
+    /**
+     * Checks if a position would be out of bounds
+     * Called before checking if something is on the board
+     * @param position The position to check
+     * @return Returns boolean based on result
+     */
     private boolean isOutOfBounds(Position position) {
         //checks if a specific position is out of bounds
         //if x or y is bigger than 7 or smaller than 0
@@ -365,6 +459,11 @@ public class BoardHelper {
 
     }
 
+    /**
+     * Removes all moves that would result in a checkmate the following turn
+     * @param moves Moves to check if they are illegal
+     * @return Returns arraylist of moves that are legal
+     */
     private ArrayList<Position> removeCheckmateMoves(ArrayList<Position> moves) {
         PieceColor pc = board[currentPosition.getX()][currentPosition.getY()].getPieceColor();
         Position actualPosition = new Position(currentPosition.getX(), currentPosition.getY());
@@ -373,21 +472,21 @@ public class BoardHelper {
         boolean positionRemoved;
         globalModifier *= -1;
         int count;
-        for (int moveLoop = 0; moveLoop < moves.size(); moveLoop++) {
+        for (int moveLoop = 0; moveLoop < moves.size(); moveLoop++) { //loops through all moves
             positionRemoved = false;
             count = 0;
             tempPosition = moves.get(moveLoop);
-            tempPiece = board[tempPosition.getX()][tempPosition.getY()];
-            board[tempPosition.getX()][tempPosition.getY()] = board[actualPosition.getX()][actualPosition.getY()];
+            tempPiece = board[tempPosition.getX()][tempPosition.getY()]; // saves the piece info at that position
+            board[tempPosition.getX()][tempPosition.getY()] = board[actualPosition.getX()][actualPosition.getY()]; // moves piece to move position
             board[actualPosition.getX()][actualPosition.getY()] = null;
             int pieceCount = (globalModifier == 1) ? blackPieceCount : whitePieceCount;
-            for (int i = 0; i < board.length && count < pieceCount && !positionRemoved; i++) {
+            for (int i = 0; i < board.length && count < pieceCount && !positionRemoved; i++) { // loops through all pieces on opposite team
                 for (int j = 0; j < board[i].length && count < pieceCount && !positionRemoved; j++) {
                     if (board[i][j] != null && board[i][j].getPieceColor() != pc) {
                         count++;
                         currentPosition = new Position(i, j);
-                        if (isKingAttackable(getMoves(board[i][j].getPieceType()))) {
-                            moves.remove(moveLoop);
+                        if (isKingAttackable(getMoves(board[i][j].getPieceType()))) { // gets moves for any piece found, calculates if a king is under attack by one of those moves
+                            moves.remove(moveLoop);  //removes move if one is found
                             moveLoop--;
                             positionRemoved = true;
                         }
@@ -405,7 +504,12 @@ public class BoardHelper {
         return moves;
     }
 
-
+    /**
+     * Checks if a king is under attack by one of the given moves
+     *
+     * @param moves Given moves to check
+     * @return Boolean result based on calculations
+     */
     private boolean isKingAttackable(ArrayList<Position> moves) {
         Position pos;
         for (int i = 0; i < moves.size(); i++) {
@@ -416,7 +520,11 @@ public class BoardHelper {
         return false;
     }
 
-
+    /**
+     * Calculates what kind of status the game is in (checkmate or stalemate)
+     * @param pc What color to check for
+     * @return Returns integer value, 1 for stalemate, 2 for checkmate
+     */
     public int checkCheck(PieceColor pc) {
         ArrayList<Position> validMoves;
         Position tempPosition = currentPosition;
@@ -475,7 +583,11 @@ public class BoardHelper {
         return 0;
     }
 
-
+    /**
+     * Calculates if a position is attackable by the opposite team
+     * @param position The position to check
+     * @return Returns boolean value based on result
+     */
     public boolean isPositionAttackable(Position position) {
         globalModifier *= -1;
         PieceColor pc = board[currentPosition.getX()][currentPosition.getY()].getPieceColor();
@@ -502,10 +614,16 @@ public class BoardHelper {
         return false;
     }
 
+    /**
+     * Toggles the globalModdifier
+     */
     private void toggleGlobalModifier() {
         globalModifier *= -1;
     }
 
+    /**
+     * Removes all illegal castles that are remaining.
+     */
     private void removeInvalidCastle() {
         if (board[currentPosition.getX()][currentPosition.getY()].getPieceType() == KING && board[currentPosition.getX()][currentPosition.getY()].amountOfMoves() == 0) {
             Position tempPosition = new Position(currentPosition.getX(), 5);
@@ -530,8 +648,12 @@ public class BoardHelper {
         }
     }
 
-    
 
+    /**
+     * Removes a position from a given arraylist of positions
+     * @param moves ArrayList of positions
+     * @param position Position to remove
+     */
     private void removePosition(ArrayList<Position> moves, Position position) {
         for (int i = 0; i < moves.size(); i++) {
             if (moves.get(i).equals(position)) {
@@ -541,16 +663,22 @@ public class BoardHelper {
 
 
     }
-    
+
+    /**
+     * Moves a piece one oldPosition to newPosition
+     * @param oldPosition position to move from
+     * @param newPosition position to move to
+     * @param toggle determines if to toggle globalModifier (do not when playing against AI)
+     */
     public void move(Position oldPosition, Position newPosition, boolean toggle)
     {
     	this.newPosition = newPosition;
     	if(board[oldPosition.getX()][oldPosition.getY()].getPieceType() == PAWN)
     	{
 
-    		if(board[newPosition.getX()][newPosition.getX()] == null && newPosition.getY() != oldPosition.getY() && isEnPassant(new Position(newPosition.getX() - (1 * globalModifier), newPosition.getY()))) // enpassant
+    		if(board[newPosition.getX()][newPosition.getX()] == null && newPosition.getY() != oldPosition.getY() && isEnPassant(new Position(newPosition.getX() - (1 * globalModifier), newPosition.getY())))
     		{
-    			if(board[newPosition.getX() - (1 * globalModifier)][newPosition.getY()].getPieceColor() == BLACK)
+    			if(board[newPosition.getX() - (1 * globalModifier)][newPosition.getY()].getPieceColor() == BLACK) //remove piece count if doing en passant
     			{
     				blackPieceCount--;
     			}
@@ -558,11 +686,11 @@ public class BoardHelper {
     			{
     				whitePieceCount--;
     			}
-    			board[newPosition.getX() - (1 * globalModifier)][newPosition.getY()] = null;
-    		}
+    			board[newPosition.getX() - (1 * globalModifier)][newPosition.getY()] = null; // remove position if enpassant
+            }
     		if(newPosition.getX() == 0 || newPosition.getX() == 7)
     		{
-    			pawnPromotion = true;
+    			pawnPromotion = true; //Do pawnpromotion if pawn is on last row
     		}
     	}
     	else if(board[oldPosition.getX()][oldPosition.getY()].getPieceType() == KING && board[oldPosition.getX()][oldPosition.getY()].amountOfMoves() == 0)
@@ -570,18 +698,18 @@ public class BoardHelper {
     		//king side castle
     		if(newPosition.getY() == 6)
     		{
-    			board[newPosition.getX()][5] = board[newPosition.getX()][7];
+    			board[newPosition.getX()][5] = board[newPosition.getX()][7]; //moves rook
     			board[newPosition.getX()][7] = null;
     		}
     		else if(newPosition.getY() == 2) // queen side castle
     		{
-    			board[newPosition.getX()][3] = board[newPosition.getX()][0];
+    			board[newPosition.getX()][3] = board[newPosition.getX()][0]; // moves rook
     			board[newPosition.getX()][0] = null;
     		}
     	}
     	if(board[newPosition.getX()][newPosition.getY()] != null)
     	{
-    		if(board[newPosition.getX()][newPosition.getY()].getPieceColor() == BLACK)
+    		if(board[newPosition.getX()][newPosition.getY()].getPieceColor() == BLACK) // if piece is where newPosition is, decrease piececount
     		{
     			blackPieceCount--;
     		}
@@ -590,7 +718,7 @@ public class BoardHelper {
     			whitePieceCount--;
     		}
     	}
-    	board[newPosition.getX()][newPosition.getY()] = board[oldPosition.getX()][oldPosition.getY()];
+    	board[newPosition.getX()][newPosition.getY()] = board[oldPosition.getX()][oldPosition.getY()]; //does the move
     	board[oldPosition.getX()][oldPosition.getY()] = null;
     	board[newPosition.getX()][newPosition.getY()].moved();
     	board[newPosition.getX()][newPosition.getY()].setPosition(newPosition);
@@ -600,12 +728,21 @@ public class BoardHelper {
     	
     
     }
-    
+
+    /**
+     * Returnts current pawnPromotion status
+     * @return pawnPromotion boolean
+     */
     public boolean getPawnPromotion()
     {
     	return pawnPromotion;
     }
-    
+
+    /**
+     * Sets a pieceType at currentPosition, used for pawnPromotion
+     *
+     * @param pt the piece type that will be set
+     */
     public void setPiece(PieceType pt)
     {
     	
@@ -614,7 +751,10 @@ public class BoardHelper {
 		pawnPromotion = false;
     	
     }
-    
+
+    /**
+     * Counts the amount of pieces for both teams
+     */
     private void countPieces()
     {
     	blackPieceCount = 0;

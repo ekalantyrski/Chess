@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import static com.Eric.PieceColor.*;
 
 /**
  * Created by Eric on 11/5/2015.
@@ -15,33 +16,35 @@ import java.util.ArrayList;
  */
 public class Game {
 
-    private Screen screen;
-    private Board board;
-    private Position clickPosition;
-    private boolean whiteTurn;
-    private boolean flipBoard;
-    private ArrayList<Element> elementArray = null;
-    private Save save;
-    private JMenuItem menuSaveItem, menuLoadItem, menuNewGame;
+    private Screen screen; // Screen object
+    private Board board; //Board object
+    private ArrayList<Element> elementArray = null; // elementArray
+    private Save save; // Save instance
+    private JMenuItem menuSaveItem, menuLoadItem, menuNewGame; // Menu items
     private int gameType; // 1 = 1v1, 2 = AI
-    private AI ai;
-    
-    private Runtime runtime;
+    private int boardStatus;
     
     MouseAdapter mouseAdapter = new MouseAdapter()
     {
+        /**
+         * Main method of the program.
+         * Based on several gamestates, something different happens
+         *
+         * @param e the mouse event
+         */
         public void mouseReleased(MouseEvent e) {
             if (board == null) {
                 gameType = getGameType(e.getX(), e.getY());
-                if (gameType != 0)
+                save = new Save(gameType);
+                if (gameType != 0) // happens if a new game is started
                 {
                     switch (gameType) {
-                        case 1:
-                            board = new Board(true, save, false);
+                        case 1: // 1v1
+                            board = new Board(save, false);
                             screen.createGameTypeScreen(false);
                             break;
-                        case 2:
-                            board = new Board(true, save, true);
+                        case 2: // AI
+                            board = new Board(save, true);
                             screen.createGameTypeScreen(false);
                             break;
                     }
@@ -50,11 +53,27 @@ public class Game {
                     screen.setElementArray(elementArray);
                     screen.update();
                 }
+                screen.setBoardStatus(0);
+                boardStatus = 0;
+            }
+            else if(boardStatus > 0)
+            {
+                int choice = getBoardStatusChoice(e.getX(), e.getY());
+                switch(choice)
+                {
+                    case 1:
+                        screen.setBoardStatus(0);
+                        boardStatus = 0;
+                        createGameTypeScreen();
+                        break;
+                    case 2:
+                        System.exit(0);
+                }
             }
             else
             {
-                if (board.getPawnPromotion() == true) {
-                    PieceType type = getPawnPromotionPiece(e.getX(), e.getY());
+                if (board.getPawnPromotion() == true) { // if board promotion is true, first choose what pawn to promote
+                    PieceType type = getPawnPromotionPiece(e.getX(), e.getY()); // chooses the piece to promote to
                     if (type != null) {
                         board.setPiece(type);
                         screen.setDrawPawnPromotion(false);
@@ -64,17 +83,19 @@ public class Game {
                     }
                 } else
                 {
-                    board.calculate(calculateSquareCoordinate(e.getX(), e.getY()));
+                    board.calculate(calculateSquareCoordinate(e.getX(), e.getY())); // the normal input, choosing pieces and where to move
                     elementArray = board.getElementArray();
                     screen.setElementArray(elementArray);
                     screen.update();
-                    if (board.getCheckStatus() == 2) {
-                        System.out.println("checkmate");
-                    } else if (board.getCheckStatus() == 1) {
-                        System.out.println("stalemate");
+                    boardStatus = board.getCheckStatus();
+                    if(boardStatus > 0)
+                    {
+                        PieceColor pc = (save.getSaveSize() % 2 == 0) ? BLACK : WHITE;
+                        screen.setBoardStatus(boardStatus, pc);
                     }
 
-                    if (board.getPawnPromotion() == true) {
+
+                    if (board.getPawnPromotion() == true) { // draw pawn promotion
                         int amountOfMoves = save.getSaveSize();
                         if (amountOfMoves % 2 == 0) {
                             screen.setDrawPawnPromotion(true, PieceColor.BLACK);
@@ -90,21 +111,30 @@ public class Game {
     
     ActionListener actionListener = new ActionListener()
     {
+        /**
+         * Does an action based on what person clicked in menu
+         * @param e What was clicked
+         */
     	public void actionPerformed(ActionEvent e)
     	{
-    		if(e.getSource() == menuSaveItem)
+    		if(e.getSource() == menuSaveItem && board != null)
     		{
-    			save.save();
+    			save.saveGame(); // give option to save game
     		}
-    		else if(e.getSource() == menuLoadItem)
+    		else if(e.getSource() == menuLoadItem) // give option to load game
     		{
                 Save newSave = Save.createNewSave();
                 if(newSave != null)
                 {
-
+                    screen.createGameTypeScreen(false);
+                    boolean usingAI = (newSave.getGameType() == 2) ? true : false;
+                	board = new Board(newSave, usingAI);
+                    elementArray = board.getElementArray();
+                    screen.setElementArray(elementArray);
+                    screen.update();
                 }
     		}
-    		else if(e.getSource() == menuNewGame)
+    		else if(e.getSource() == menuNewGame) // create a new game
     		{
     			createGameTypeScreen();
                 board = null;
@@ -113,17 +143,20 @@ public class Game {
     	}
     };
 
-
+    /**
+     * Constructor, creates all main game components
+     */
     public Game()
     {
         createWindow();
         DAL dal = new DAL();
-        save = new Save();
         screen.addMouseListener(mouseAdapter);
         createGameTypeScreen();
-        runtime = Runtime.getRuntime();
     }
 
+    /**
+     * Creates the window and adds menu and display
+     */
     private void createWindow() {
         JFrame frame = new JFrame("Chess"); // creates window object
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); //exits if X is clicked
@@ -134,7 +167,7 @@ public class Game {
         screen.setPreferredSize(new Dimension(690,690));
         frame.add(screen);
         JMenuBar menuBar = new JMenuBar();
-        JMenu menu = new JMenu("File");
+        JMenu menu = new JMenu("Game");
         menuBar.add(menu);
         menuNewGame = new JMenuItem("New Game");
         menuSaveItem = new JMenuItem("Save");
@@ -157,6 +190,12 @@ public class Game {
         frame.setVisible(true);
     }
 
+    /**
+     * Calculates what coordinate was clicked (squares)
+     * @param mouseX The x coordinate of mouse
+     * @param mouseY The Y coordinate of mouse
+     * @return Returns a position value
+     */
     private Position calculateSquareCoordinate(int mouseX, int mouseY)
     {
         int row = (mouseY - screen.topInset) / screen.squareSize;
@@ -165,6 +204,12 @@ public class Game {
         return position;
     }
 
+    /**
+     * Calculate what piece to promote to
+     * @param x The x coordinate of the mouse
+     * @param y The y coordinate of the mouse
+     * @return Returns the pieceType chosen
+     */
     private PieceType getPawnPromotionPiece(int x, int y)
     {
         if(y > screen.pawnPromotionTopInset + 97 || y < screen.pawnPromotionTopInset + 12)
@@ -188,13 +233,23 @@ public class Game {
         }
         return null;
     }
-    
+
+    /**
+     * Sets variables to make the newGame screen
+     */
     private void createGameTypeScreen()
     {
+        board = null;
     	screen.createGameTypeScreen(true);
     	screen.update();
     }
-    
+
+    /**
+     * Calculates what gameType was chosen
+     * @param x The mouse x coordinate
+     * @param y The mouse y coordinate
+     * @return Returns int value of what gameType was chosen
+     */
     private int getGameType(int x, int y)
     {
         if(y > 500 || y < 345)
@@ -203,5 +258,27 @@ public class Game {
             return 0;
         else
     	    return(x - 105)/(215 + 50) + 1;
+    }
+
+    /**
+     * Gets the choice for when the boardstatus screen is popped up
+     * @param x The x coordinte for mouse
+     * @param y The y coordinate for mouse
+     * @return The integer value of the status chosen
+     */
+    private int getBoardStatusChoice(int x, int y)
+    {
+        if(y > 475 || y < 350)
+            return 0;
+        else if(x < 140 || (x > 315 && x < 370) || x > 545)
+            return 0;
+        else if(x < 370)
+        {
+            return 1; // playagain
+        }
+        else
+        {
+            return 2; // exit
+        }
     }
 }
