@@ -39,8 +39,9 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     	Score betaScore = new Score(Integer.MAX_VALUE, new Save(1));
         Score score = calculate(realBoard, 4, true, save, alphaScore, betaScore);
         ArrayList<Position> moves = score.getSave().getAllMoves();
-        realBH = new BoardHelper(realBoard, isWhite, realSave);
+        realBH = new BoardHelper(realBoard, isWhite, realSave, true);
         realBH.move(moves.get(moves.size() - 2), moves.get(moves.size() - 1), true);
+        System.out.println(score.getScore());
 
     }
 
@@ -73,7 +74,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         	Score maxScore = new Score(Integer.MIN_VALUE, maxSave);
         	Score newScore;
             pc = (isWhite) ? WHITE : BLACK;
-            bh = new BoardHelper(board, isWhite, save);
+            bh = new BoardHelper(board, isWhite, save, false);
             for(int i = 0; i < board.length; i++) // loops through board and finds all pieces of the maximizing players color
             {
                 for(int j = 0; j < board[i].length; j++)
@@ -87,7 +88,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                         {
                             newSave.addMove(new Position(i,j), validMoves.get(moves));
                             newBoard = copyArray(board);
-                            BoardHelper newBH = new BoardHelper(newBoard, isWhite, newSave);
+                            BoardHelper newBH = new BoardHelper(newBoard, isWhite, newSave, false);
                             newBH.move(oldPosition, validMoves.get(moves), true);
                             newScore = calculate(newBoard, depth - 1, false, newSave, alphaScore.copy(), betaScore.copy()); // calls calculate with new piece position
                             
@@ -117,7 +118,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         	Score minScore = new Score(Integer.MAX_VALUE, minSave);
         	Score newScore;
             pc = (!isWhite) ? WHITE : BLACK;
-            bh = new BoardHelper(board, !isWhite, save);
+            bh = new BoardHelper(board, !isWhite, save, false);
             for(int i = 0; i < board.length; i++) //loops through board finding pieces of minimizing player
             {
                 for(int j = 0; j < board[i].length; j++)
@@ -130,7 +131,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                         for(int moves = 0; moves < validMoves.size(); moves++) // iterates through all moves, and makes that move
                         {
                             newBoard = copyArray(board);
-                            BoardHelper newBH = new BoardHelper(newBoard, !isWhite, newSave);
+                            BoardHelper newBH = new BoardHelper(newBoard, !isWhite, newSave, false);
                             newBH.move(oldPosition, validMoves.get(moves), true);
                             newScore = calculate(newBoard, depth - 1, true, newSave, alphaScore.copy(),  betaScore.copy()); // calls calculate with new piece positions
                             
@@ -166,9 +167,37 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     private int getScore(Piece[][] board, Save save)
     {
         int score = 0;
-        score += (1 * getAllMoves(isWhite, save, board).size());
+        score += getMoveScore(save, board);
         score += getPieceDifference(board);
 
+        return score;
+    }
+
+    /**
+     * Calculates a score depending on positions of the pieces
+     * and the moves that can be made
+     * @param save The current save of the game
+     * @param board The current board
+     * @return The score calculated
+     */
+    private int getMoveScore(Save save, Piece[][] board)
+    {
+        ArrayList<Position> moves = getAllMoves(isWhite, save, board);
+        int score = moves.size();
+        for(int i = 0; i < moves.size(); i++) // if a move is on middle square, increment score
+        {
+            if(moves.get(i).isCenterSquare())
+                score++;
+        }
+        PieceColor pc = (isWhite) ? WHITE : BLACK;
+        for(int i = 0; i < board.length; i++)
+        {
+            for(int j = 0; j < board[i].length; j++)
+            {
+                if(board[i][j] != null && board[i][j].getPieceColor() == pc)
+                    score+=2;
+            }
+        }
         return score;
     }
 
@@ -182,7 +211,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     private ArrayList<Position> getAllMoves(boolean whiteTurn, Save save, Piece[][] board)
     {
         ArrayList<Position> validMoves = new ArrayList<>();
-        BoardHelper bh = new BoardHelper(board, whiteTurn, save);
+        BoardHelper bh = new BoardHelper(board, whiteTurn, save, false);
         PieceColor pc = (whiteTurn) ? WHITE : BLACK;
         for(int i = 0; i < board.length; i++) // Loops through whole board
         {

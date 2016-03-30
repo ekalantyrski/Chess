@@ -69,4 +69,29 @@ public class Position {
     {
         return getColumnLetter(y) + "" + x;
     }
+
+    public boolean isCenterSquare()
+    {
+        if(y == 2)
+        {
+            if(x == 3 || x == 4)
+                return true;
+        }
+        else if(y == 3)
+        {
+            if(x == 2 || x == 3 || x == 4 || x == 5)
+                return true;
+        }
+        else if(y == 4)
+        {
+            if(x == 2 || x == 3 || x == 4 || x == 5)
+                return true;
+        }
+        else if(y == 5)
+        {
+            if(x == 3 || x == 4)
+                return true;
+        }
+        return false;
+    }
 }

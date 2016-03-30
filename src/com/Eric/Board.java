@@ -28,21 +28,25 @@ public class Board
 	 * @param save A save object can be empty or already have moves recorded
 	 * @param usingAI used to determine if AI is to be used.
      */
-    public Board(Save save, boolean usingAI)
+    public Board(Save save, boolean usingAI, boolean whiteTurn)
     {
 
         board = new Piece[8][8]; //initialization of board and variables
         createPieces();
 		possibleMovesImage = DAL.getPossibleMovesImage();
 		moveSound = DAL.getMoveSound();
-        whiteTurn = true;
+        this.whiteTurn = whiteTurn;
 		checkStatus = 0;
 		this.save = save;
-        bh = new BoardHelper(board, whiteTurn, this.save);
+        bh = new BoardHelper(board, whiteTurn, this.save, true);
 		this.usingAI = usingAI;
 		if(usingAI)
 		{
 			createAI();
+		}
+		if(!whiteTurn)
+		{
+			bh.flipBoard();
 		}
 		if(save.getSaveSize() > 0) //logic for if a save game is loaded
 		{
@@ -318,6 +322,8 @@ public class Board
 		}
 		createElementArray();
 	}
+
+
 }
 
 

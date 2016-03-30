@@ -22,9 +22,15 @@ public class BoardHelper {
     private int blackPieceCount; // count for black pieces
     private int whitePieceCount; // count for white pieces
 
-    public BoardHelper(Piece[][] board, boolean whiteTurn, Save save) {
+    public BoardHelper(Piece[][] board, boolean whiteTurn, Save save, boolean isPlayer) {
         this.board = board;
-        globalModifier = (whiteTurn) ? -1 : 1;
+        if(isPlayer)
+        {
+            globalModifier = -1;
+        }else
+        {
+            globalModifier = (whiteTurn) ? -1 : 1;
+        }
         this.save = save;
         pawnPromotion = false;
         countPieces();
@@ -777,5 +783,19 @@ public class BoardHelper {
     		}
     	}
     	
+    }
+
+    public void flipBoard()
+    {
+        Piece temp;
+        for(int i = 0; i < 2; i++)
+        {
+            for(int j = 0; j < board[i].length; j++)
+            {
+                temp = board[i][j];
+                board[i][j] = board[board.length - i - 1][j];
+                board[board.length - i - 1][j] = temp;
+            }
+        }
     }
 }

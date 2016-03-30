@@ -40,11 +40,11 @@ public class Game {
                 {
                     switch (gameType) {
                         case 1: // 1v1
-                            board = new Board(save, false);
+                            board = new Board(save, false, false);
                             screen.createGameTypeScreen(false);
                             break;
                         case 2: // AI
-                            board = new Board(save, true);
+                            board = new Board(save, true, true);
                             screen.createGameTypeScreen(false);
                             break;
                     }
@@ -117,9 +117,11 @@ public class Game {
          */
     	public void actionPerformed(ActionEvent e)
     	{
-    		if(e.getSource() == menuSaveItem && board != null)
+    		if(e.getSource() == menuSaveItem && board == null)
     		{
-    			save.saveGame(); // give option to save game
+    			//save.saveGame(); // give option to save game
+                Network nt = new Network();
+                new Thread(nt).start();
     		}
     		else if(e.getSource() == menuLoadItem) // give option to load game
     		{
@@ -128,7 +130,7 @@ public class Game {
                 {
                     screen.createGameTypeScreen(false);
                     boolean usingAI = (newSave.getGameType() == 2) ? true : false;
-                	board = new Board(newSave, usingAI);
+                	board = new Board(newSave, usingAI, false);
                     elementArray = board.getElementArray();
                     screen.setElementArray(elementArray);
                     screen.update();
