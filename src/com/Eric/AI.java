@@ -1,5 +1,6 @@
 package com.Eric;
 
+import java.applet.AudioClip;
 import java.util.ArrayList;
 import static com.Eric.PieceColor.*;
 import static com.Eric.PieceType.*;
@@ -7,12 +8,17 @@ import static com.Eric.PieceType.*;
 /**
  * Created by Eric on 12/29/2015.
  */
-public class AI{
+public class AI implements Runnable{
 
+    private boolean boardFlipped;
     private Piece[][] realBoard; //this board is not altered until final move is calculated
     private Save realSave;     //this is save is not altered until final move is calculated
     private boolean isWhite;    //what side is ai playing as
     private BoardHelper realBH; //not used until final move is calculated
+    private int moveAmount;
+    private Board board2;
+    private AudioClip moveSound;
+    private boolean moveFinished;
     private final int PAWN_VALUE = 10; //values given to calculate the score for a board
     private final int KNIGHT_VALUE = 30;
     private final int BISHOP_VALUE = 30;
@@ -20,11 +26,15 @@ public class AI{
     private final int QUEEN_VALUE = 90;
     private final int KING_VALUE = 5000;
 
-public AI(Piece[][] board, boolean isWhite, Save save)
+public AI(Piece[][] board, boolean isWhite, Save save, Board board2, boolean boardFlipped)
 {
     this.realBoard = board;
     this.isWhite = isWhite;
     this.realSave = save;
+    moveSound = DAL.getMoveSound();
+    this.board2 = board2;
+    moveFinished = false;
+    this.boardFlipped = boardFlipped;
 }
 
     /**
@@ -32,16 +42,21 @@ public AI(Piece[][] board, boolean isWhite, Save save)
      * Makes variables that are used in calculate method and calls it
      * Then does the move that is calculated
      */
-    public void move()
+    public void run()
     {
+        int movesToLookAhead = 4;
+        moveAmount = realSave.getSaveSize() + movesToLookAhead;
     	Save save = new Save(1);
     	Score alphaScore = new Score(Integer.MIN_VALUE, new Save(1));
     	Score betaScore = new Score(Integer.MAX_VALUE, new Save(1));
-        Score score = calculate(realBoard, 4, true, save, alphaScore, betaScore);
+        Score score = calculate(realBoard, movesToLookAhead, true, save, alphaScore, betaScore);
         ArrayList<Position> moves = score.getSave().getAllMoves();
-        realBH = new BoardHelper(realBoard, isWhite, realSave, true);
+        realBH = new BoardHelper(realBoard, isWhite, realSave, true, boardFlipped);
         realBH.move(moves.get(moves.size() - 2), moves.get(moves.size() - 1), true);
         System.out.println(score.getScore());
+        board2.updateElementArray();
+        moveSound.play();
+        moveFinished = true;
 
     }
 
@@ -71,10 +86,9 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         {
             Piece[][] newBoard;
         	Save maxSave = new Save(1);
-        	Score maxScore = new Score(Integer.MIN_VALUE, maxSave);
         	Score newScore;
             pc = (isWhite) ? WHITE : BLACK;
-            bh = new BoardHelper(board, isWhite, save, false);
+            bh = new BoardHelper(board, isWhite, save, false, boardFlipped);
             for(int i = 0; i < board.length; i++) // loops through board and finds all pieces of the maximizing players color
             {
                 for(int j = 0; j < board[i].length; j++)
@@ -87,10 +101,10 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                         for(int moves = 0; moves < validMoves.size(); moves++) //iterates through moves and makes a move
                         {
                             newSave.addMove(new Position(i,j), validMoves.get(moves));
-                            newBoard = copyArray(board);
-                            BoardHelper newBH = new BoardHelper(newBoard, isWhite, newSave, false);
-                            newBH.move(oldPosition, validMoves.get(moves), true);
-                            newScore = calculate(newBoard, depth - 1, false, newSave, alphaScore.copy(), betaScore.copy()); // calls calculate with new piece position
+                            newBoard = copyArray(board);    //hard copy
+                            BoardHelper newBH = new BoardHelper(newBoard, isWhite, newSave, false, boardFlipped); //object to move the piece
+                            newBH.move(oldPosition, validMoves.get(moves), true);   //makes the move
+                            newScore = calculate(newBoard, depth - 1, false, newSave, alphaScore.copy(), betaScore.copy()); // recursive call
                             
                             if(newScore.getScore() > alphaScore.getScore()) // saves the best score that it got
                             {
@@ -118,7 +132,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
         	Score minScore = new Score(Integer.MAX_VALUE, minSave);
         	Score newScore;
             pc = (!isWhite) ? WHITE : BLACK;
-            bh = new BoardHelper(board, !isWhite, save, false);
+            bh = new BoardHelper(board, !isWhite, save, false, boardFlipped);
             for(int i = 0; i < board.length; i++) //loops through board finding pieces of minimizing player
             {
                 for(int j = 0; j < board[i].length; j++)
@@ -131,7 +145,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                         for(int moves = 0; moves < validMoves.size(); moves++) // iterates through all moves, and makes that move
                         {
                             newBoard = copyArray(board);
-                            BoardHelper newBH = new BoardHelper(newBoard, !isWhite, newSave, false);
+                            BoardHelper newBH = new BoardHelper(newBoard, !isWhite, newSave, false, boardFlipped);
                             newBH.move(oldPosition, validMoves.get(moves), true);
                             newScore = calculate(newBoard, depth - 1, true, newSave, alphaScore.copy(),  betaScore.copy()); // calls calculate with new piece positions
                             
@@ -164,11 +178,22 @@ public AI(Piece[][] board, boolean isWhite, Save save)
      * @param save The previous moves that happened
      * @return Returns a score that was caclulated
      */
-    private int getScore(Piece[][] board, Save save)
+    private double getScore(Piece[][] board, Save save)
     {
-        int score = 0;
-        score += getMoveScore(save, board);
+        double score = 0;
+        if(save.getSaveSize() < 10)
+        {
+            score += getMoveScore(save, board) * 0.75;
+            score += getMiddlePiecesScore(board, isWhite) * 1.25;
+        }
+        else
+        {
+            score += getMoveScore(save, board) * 1.25;
+            score += getMiddlePiecesScore(board, isWhite) * 0.75;
+        }
         score += getPieceDifference(board);
+        score += getKingSafetyScore(board);
+        score += getPiecePositionScore(board);
 
         return score;
     }
@@ -180,26 +205,120 @@ public AI(Piece[][] board, boolean isWhite, Save save)
      * @param board The current board
      * @return The score calculated
      */
-    private int getMoveScore(Save save, Piece[][] board)
+    private double getMoveScore(Save save, Piece[][] board)
     {
         ArrayList<Position> moves = getAllMoves(isWhite, save, board);
         int score = moves.size();
         for(int i = 0; i < moves.size(); i++) // if a move is on middle square, increment score
         {
+            score++;
             if(moves.get(i).isCenterSquare())
                 score++;
         }
+
+        return score;
+    }
+
+    /**
+     *  Returns a score based on how many pieces are in the middle
+     * @param board The current board
+     * @return Saves
+     */
+    private double getMiddlePiecesScore(Piece[][] board, boolean isWhite)
+    {
+        double score = 0;
         PieceColor pc = (isWhite) ? WHITE : BLACK;
-        for(int i = 0; i < board.length; i++)
+        for(int i = 2; i < board.length - 2; i++)
         {
             for(int j = 0; j < board[i].length; j++)
             {
-                if(board[i][j] != null && board[i][j].getPieceColor() == pc)
-                    score+=2;
+                Position position = new Position(i, j);
+                if(position.isCenterSquare() && board[i][j] != null && board[i][j].getPieceColor() == pc)
+                    score++;
+
             }
         }
         return score;
     }
+
+    private double getKingSafetyScore(Piece[][] board)
+    {
+        double score = 0;
+        if(moveAmount > 10 && moveAmount < 25) {
+            if (board[0][6] != null && board[0][6].getPieceType() == KING)
+            {
+                if(board[1][6] != null && board[1][6].getPieceType() == PAWN && ((board[1][5] != null && board[1][5].getPieceType() == PAWN)
+                        || (board[1][7] != null && board[1][7].getPieceType() == PAWN)))
+                {
+                        score += 10;
+                }
+            }
+            else if (board[0][2] != null && board[0][2].getPieceType() == KING)
+            {
+                if(board[1][2] != null && board[1][2].getPieceType() == PAWN && ((board[1][1] != null && board[1][1].getPieceType() == PAWN)
+                        || (board[1][3] != null && board[1][3].getPieceType() == PAWN)))
+                {
+                    score += 10;
+                }
+
+            }
+        }
+
+        return score;
+
+    }
+
+    private double getPiecePositionScore(Piece[][] board)
+    {
+        double score = 0;
+        if(moveAmount < 15)
+        {
+            //checks if queen has moved
+            if(board[0][3] == null)
+            {
+                score -= 25;
+            }
+
+            if(board[0][1] == null)
+            {
+                score += 10;
+                if(board[0][6] == null)
+                {
+                    score += 5;
+                }
+
+            }
+            else if(board[0][6] == null)
+            {
+                score += 10;
+            }
+
+            //checks if bishop has moved
+            if(board[0][2] == null)
+            {
+                score += 10;
+                if(board[0][5] == null)
+                {
+                    score += 5;
+                }
+
+            }
+            else if(board[0][5] == null)
+            {
+                score += 10;
+            }
+
+
+
+
+        }
+
+
+
+
+        return score;
+    }
+
 
     /**Returns all moves possible by maximizing player
      *
@@ -211,8 +330,8 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     private ArrayList<Position> getAllMoves(boolean whiteTurn, Save save, Piece[][] board)
     {
         ArrayList<Position> validMoves = new ArrayList<>();
-        BoardHelper bh = new BoardHelper(board, whiteTurn, save, false);
-        PieceColor pc = (whiteTurn) ? WHITE : BLACK;
+        BoardHelper bh = new BoardHelper(board, whiteTurn, save, false, boardFlipped);
+        PieceColor pc = (isWhite) ? WHITE : BLACK;
         for(int i = 0; i < board.length; i++) // Loops through whole board
         {
             for(int j = 0; j < board[i].length; j++)
@@ -259,7 +378,7 @@ public AI(Piece[][] board, boolean isWhite, Save save)
     private int calculateDifference(PieceType pt, Piece[][] board)
     {
         PieceColor pc = (isWhite) ? WHITE : BLACK;
-        int amount = 0;
+        int difference = 0;
         for(int loop = 0; loop < 2; loop++)
         {
             for(int i = 0; i < board.length;i++)
@@ -268,15 +387,15 @@ public AI(Piece[][] board, boolean isWhite, Save save)
                 {
                     if(board[i][j] != null && board[i][j].getPieceColor() == pc && board[i][j].getPieceType() == pt)
                     {
-                        amount++;
+                        difference++;
                     }
                 }
             }
             pc = (isWhite) ? BLACK : WHITE;
-            amount *= -1;
+            difference *= -1;
 
         }
-        return amount;
+        return difference;
 
     }
 
@@ -298,5 +417,15 @@ public AI(Piece[][] board, boolean isWhite, Save save)
             }
         }
         return newArray;
+    }
+
+    public boolean moveFinished()
+    {
+        return moveFinished;
+    }
+
+    public void setMoveFinished(boolean moveFinished)
+    {
+        this.moveFinished = moveFinished;
     }
 }

@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import static com.Eric.PieceType.*;
 import static com.Eric.PieceColor.*;
+import static com.Eric.ActionType.*;
 
 public class Board
 {
@@ -19,16 +20,22 @@ public class Board
 	private int checkStatus;
 	private Save save;
     private BoardHelper bh;
-    private AI ai;
-	private boolean usingAI;
+	private int gameType;
 	private AudioClip moveSound;
+	private DrawData drawData;
+	private boolean moveCompleted;
+	private Action actionMade;
+	private boolean canMove;
+	private boolean boardFlipped;
+	private PieceColor boardColor;
 
 	/**
 	 * Constructor for class
 	 * @param save A save object can be empty or already have moves recorded
-	 * @param usingAI used to determine if AI is to be used.
+	 * @param gameType used to determine gameType
      */
-    public Board(Save save, boolean usingAI, boolean whiteTurn)
+    public Board(Save save, int gameType, boolean whiteTurn, DrawData drawData)
+
     {
 
         board = new Piece[8][8]; //initialization of board and variables
@@ -38,20 +45,27 @@ public class Board
         this.whiteTurn = whiteTurn;
 		checkStatus = 0;
 		this.save = save;
-        bh = new BoardHelper(board, whiteTurn, this.save, true);
-		this.usingAI = usingAI;
-		if(usingAI)
-		{
-			createAI();
-		}
+        bh = new BoardHelper(board, whiteTurn, this.save, true, !whiteTurn);
+		this.drawData = drawData;
+		moveCompleted = false;
+		canMove = false;
+		actionMade = null;
+
+		this.gameType = gameType;
+
 		if(!whiteTurn)
 		{
 			bh.flipBoard();
+			boardFlipped = true;
+			boardColor = BLACK;
+		}
+		else{
+			boardColor = WHITE;
 		}
 		if(save.getSaveSize() > 0) //logic for if a save game is loaded
 		{
 
-			if(usingAI)
+			if(gameType == 2)
 			{
 				whiteTurn = true;
 			}
@@ -82,11 +96,11 @@ public class Board
 	 */
 	private void createPawns() {
             for (int i = 0; i < board.length; i++) {
-                board[6][i] = new Piece(PAWN, WHITE, new Position(6, i));
+                board[6][i] = new Piece(PAWN, WHITE);
             }
 
             for (int j = 0; j < board.length; j++) {
-                board[1][j] = new Piece(PAWN, BLACK, new Position(1, j));
+                board[1][j] = new Piece(PAWN, BLACK);
             }
 	}
 
@@ -95,8 +109,8 @@ public class Board
 	 */
 	private void createKings()
 	{
-			board[7][4] = new Piece(KING, WHITE, new Position(7, 4));
-			board[0][4] = new Piece(KING, BLACK, new Position(0 ,4));
+			board[7][4] = new Piece(KING, WHITE);
+			board[0][4] = new Piece(KING, BLACK);
 	}
 
 	/**
@@ -104,8 +118,8 @@ public class Board
 	 */
 	private void createQueens()
 	{
-			board[7][3] = new Piece(QUEEN, WHITE, new Position(7 ,3));
-			board[0][3] = new Piece(QUEEN, BLACK, new Position(0, 3));
+			board[7][3] = new Piece(QUEEN, WHITE);
+			board[0][3] = new Piece(QUEEN, BLACK);
 	}
 
 	/**
@@ -113,10 +127,10 @@ public class Board
 	 */
 	private void createBishops()
 	{
-			board[7][2] = new Piece(BISHOP, WHITE, new Position(7, 2));
-			board[7][5] = new Piece(BISHOP, WHITE, new Position(7, 5));
-			board[0][2] = new Piece(BISHOP, BLACK, new Position(0, 2));
-			board[0][5] = new Piece(BISHOP, BLACK, new Position(0, 5));
+			board[7][2] = new Piece(BISHOP, WHITE);
+			board[7][5] = new Piece(BISHOP, WHITE);
+			board[0][2] = new Piece(BISHOP, BLACK);
+			board[0][5] = new Piece(BISHOP, BLACK);
 	}
 
 	/**
@@ -124,10 +138,10 @@ public class Board
 	 */
 	private void createRooks()
 	{
-			board[7][0] = new Piece(ROOK, WHITE, new Position(7, 0));
-			board[7][7] = new Piece(ROOK, WHITE, new Position(7, 7));
-			board[0][0] = new Piece(ROOK, BLACK, new Position(0, 0));
-			board[0][7] = new Piece(ROOK, BLACK, new Position(0, 7));
+			board[7][0] = new Piece(ROOK, WHITE);
+			board[7][7] = new Piece(ROOK, WHITE);
+			board[0][0] = new Piece(ROOK, BLACK);
+			board[0][7] = new Piece(ROOK, BLACK);
 		
 	}
 
@@ -136,10 +150,10 @@ public class Board
 	 */
 	private void createKnights()
 	{
-			board[7][1] = new Piece(KNIGHT, WHITE, new Position(7, 1));
-			board[7][6] = new Piece(KNIGHT, WHITE, new Position(7, 6));
-			board[0][1] = new Piece(KNIGHT, BLACK, new Position(0, 1));
-			board[0][6] = new Piece(KNIGHT, BLACK, new Position(0, 6));
+			board[7][1] = new Piece(KNIGHT, WHITE);
+			board[7][6] = new Piece(KNIGHT, WHITE);
+			board[0][1] = new Piece(KNIGHT, BLACK);
+			board[0][6] = new Piece(KNIGHT, BLACK);
 		
 	}
 
@@ -158,7 +172,7 @@ public class Board
     				elementArray.add(new Element(DAL.getImage(board[i][j].getPieceType(), board[i][j].getPieceColor()), i, j));
     			}
     		}
-    	
+    	drawData.setElementArray(elementArray);
     }
 
 	/**
@@ -169,23 +183,46 @@ public class Board
      */
     public ArrayList<Element> calculate(Position clickedPosition) {
             if (isValidMove(clickedPosition)) {
-				if(usingAI)
+				if(gameType == 2)
 				{
 					bh.move(currentPosition, clickedPosition, false);
-					ai.move();
+					createElementArray();
+					canMove = false;
 				}
-				else
+				else if(gameType == 1)
 				{
 					bh.move(currentPosition, clickedPosition, true);
 					whiteTurn ^= true;
 				}
+				else if(gameType == 3)
+				{
+					bh.move(currentPosition, clickedPosition, false);
+					PieceColor pc = (whiteTurn) ? WHITE : BLACK;
+					Position oldPosition;
+					Position newPosition;
+					if(boardFlipped)
+					{
+						oldPosition = currentPosition;
+						newPosition = clickedPosition;
+					}
+					else {
+						oldPosition = currentPosition;
+						newPosition = clickedPosition;
+					}
+					//String moveInformation = oldPosition.toString() + " " + newPosition.toString();
+					actionMade = new Action(pc, MOVE, oldPosition, newPosition);
+					canMove = false;
+
+				}
+
 				moveSound.play();
-				checkStatus();
                 validMoves = null;
                 currentPosition = null;
 				createElementArray();
+				moveCompleted = true;
 			} else {
-                if(isValidColor(clickedPosition, whiteTurn)) {
+				moveCompleted = false;
+                if(isValidColor(clickedPosition, whiteTurn) && canMove) {
                     currentPosition = clickedPosition;
                     createElementArray();
                     if (board[clickedPosition.getX()][clickedPosition.getY()] != null) {
@@ -268,7 +305,33 @@ public class Board
      */
 	public void setPiece(PieceType pieceType)
 	{
-		bh.setPiece(pieceType);
+		int amountOfMoves = save.getSaveSize();
+		PieceColor pieceColor;
+		System.out.println(amountOfMoves);
+		if (amountOfMoves % 2 == 0)
+		{
+			if(boardColor == WHITE)
+			{
+				pieceColor = BLACK;
+			}
+			else
+			{
+				pieceColor = WHITE;
+			}
+		}
+		else
+		{
+			if(boardColor == WHITE)
+			{
+				pieceColor = WHITE;
+			}
+			else
+			{
+				pieceColor = BLACK;
+			}
+		}
+		if(whiteTurn)
+		bh.setPiece(pieceType, pieceColor);
         createElementArray();
 
 	}
@@ -294,18 +357,9 @@ public class Board
 	/**
 	 * Checks if there is a checkmate or stalemate, and records it.
 	 */
-	public void checkStatus()
+	public void checkStatus(PieceColor pieceColor)
 	{
-		PieceColor color = (whiteTurn) ? BLACK : WHITE;
-		checkStatus = bh.checkCheck(color);
-	}
-
-	/**
-	 * Creates AI object
-	 */
-	private void createAI()
-	{
-		this.ai = new AI(board, !whiteTurn, save);
+		checkStatus = bh.checkCheck(pieceColor, boardColor);
 	}
 
 	/**
@@ -318,10 +372,64 @@ public class Board
 		int size = savedMoves.size() / 2;
 		for(int i = 0; i < size; i++)
 		{
-			bh.move(savedMoves.get(2 * i), savedMoves.get((2 * i) + 1), !usingAI);
+			bh.move(savedMoves.get(2 * i), savedMoves.get((2 * i) + 1), gameType != 2);
 		}
 		createElementArray();
 	}
+
+	/**
+	 * Only used in network component
+	 * @param action the action that was made, that needs to be recreated
+     */
+	public void movePiece(Action action)
+	{
+		Position oldPosition;
+		Position newPosition;
+		if(boardFlipped){
+			oldPosition = new Position(action.getMovesInformation()[0]);
+			newPosition = new Position(action.getMovesInformation()[1]);
+			oldPosition = new Position(7 - oldPosition.getX(), 7 - oldPosition.getY());
+			newPosition = new Position(7 - newPosition.getX(), 7 - newPosition.getY());
+		}
+		else{
+			oldPosition = new Position(action.getMovesInformation()[0]);
+			newPosition = new Position(action.getMovesInformation()[1]);
+			oldPosition = new Position(7 - oldPosition.getX(),7 - oldPosition.getY());
+			newPosition = new Position(7 - newPosition.getX(),7 - newPosition.getY());
+		}
+		bh.move(oldPosition, newPosition, false);
+		canMove = true;
+		createElementArray();
+
+	}
+
+	public Piece[][] getBoard()
+	{
+		return board;
+	}
+
+	public boolean isMoveCompleted()
+	{
+		return moveCompleted;
+	}
+
+	public void updateElementArray()
+	{
+		createElementArray();
+	}
+
+	public void setCanMove(boolean canMove)
+	{
+		this.canMove = canMove;
+	}
+
+	public Action getActionMade()
+	{
+		Action action = actionMade;
+		actionMade = null;
+		return action;
+	}
+
 
 
 }

@@ -21,8 +21,12 @@ public class Game {
     private ArrayList<Element> elementArray = null; // elementArray
     private Save save; // Save instance
     private JMenuItem menuSaveItem, menuLoadItem, menuNewGame; // Menu items
-    private int gameType; // 1 = 1v1, 2 = AI
-    private int boardStatus;
+    private int gameType; // 1 = 1v1, 2 = AI, 3 = Network
+    private int boardStatus; // if above 0, game end
+    private Network nt; // the network object
+    private DrawData drawData;
+    private AI ai;
+    private boolean whiteTurn;
     
     MouseAdapter mouseAdapter = new MouseAdapter()
     {
@@ -34,24 +38,77 @@ public class Game {
          */
         public void mouseReleased(MouseEvent e) {
             if (board == null) {
-                gameType = getGameType(e.getX(), e.getY());
-                save = new Save(gameType);
-                if (gameType != 0) // happens if a new game is started
+                if(gameType == 2)
                 {
-                    switch (gameType) {
-                        case 1: // 1v1
-                            board = new Board(save, false, false);
-                            screen.createGameTypeScreen(false);
-                            break;
-                        case 2: // AI
-                            board = new Board(save, true, true);
-                            screen.createGameTypeScreen(false);
-                            break;
-                    }
+                    whiteTurn = (getPlayerColor(e.getX(), e.getY()) == WHITE) ? true : false;
+                    screen.setDrawPlayerColorScreen(false);
+                    board = new Board(save, gameType, whiteTurn, drawData);
+                    ai = new AI(board.getBoard(), !whiteTurn, save, board, !whiteTurn);
+                    if(!whiteTurn)
+                    {
+                        board.setCanMove(false);
+                        (new Thread(ai)).start();
 
+                    }
+                    else
+                    {
+                        board.setCanMove(true);
+
+                    }
                     elementArray = board.getElementArray();
                     screen.setElementArray(elementArray);
                     screen.update();
+
+                }
+                else
+                {
+                    gameType = getGameType(e.getX(), e.getY());
+                    save = new Save(gameType);
+                    switch (gameType)
+                    {
+                        case 1: // 1v1
+                            whiteTurn = true;
+                            board = new Board(save, gameType, whiteTurn, drawData);
+                            screen.createGameTypeScreen(false);
+                            board.setCanMove(true);
+                            break;
+                        case 2: // AI
+                            screen.setDrawPlayerColorScreen(true);
+                            screen.createGameTypeScreen(false);
+                            screen.update();
+                            break;
+                        case 3:// network
+                            if(nt == null) {
+                                nt = new Network();
+                                (new Thread(nt)).start();
+                                Action action;
+                                do
+                                {
+                                    try
+                                    {
+                                        Thread.sleep(10);
+                                    } catch (InterruptedException ie) {
+                                    }
+
+                                    action = nt.getAction();
+                                } while (action == null);
+                                whiteTurn = (action.getPieceColor() == WHITE) ? true : false;
+                                board = new Board(save, gameType, whiteTurn, drawData);
+                                screen.createGameTypeScreen(false);
+                                if (whiteTurn) {
+                                    board.setCanMove(true);
+                                } else {
+                                    board.setCanMove(false);
+                                }
+                            }
+                            break;
+                    }
+                    if(gameType != 2)
+                    {
+                        elementArray = board.getElementArray();
+                        screen.setElementArray(elementArray);
+                        screen.update();
+                    }
                 }
                 screen.setBoardStatus(0);
                 boardStatus = 0;
@@ -80,27 +137,70 @@ public class Game {
                         elementArray = board.getElementArray();
                         screen.setElementArray(elementArray);
                         screen.update();
+
+
+                        if(gameType == 2 && board.isMoveCompleted())
+                        {
+                            try
+                            {
+                                Thread.sleep(50);
+                            }catch (InterruptedException ie)
+                            {}
+                            (new Thread(ai)).start();
+                            board.updateElementArray();
+                            elementArray = board.getElementArray();
+                            screen.setElementArray(elementArray);
+                            screen.update();
+                        }
                     }
                 } else
                 {
                     board.calculate(calculateSquareCoordinate(e.getX(), e.getY())); // the normal input, choosing pieces and where to move
-                    elementArray = board.getElementArray();
-                    screen.setElementArray(elementArray);
-                    screen.update();
-                    boardStatus = board.getCheckStatus();
-                    if(boardStatus > 0)
+                    if(board.isMoveCompleted()) {
+                        board.updateElementArray();
+                        checkBoardStatus();
+
+                    }
+
+                    if(gameType == 2 && board.isMoveCompleted() && board.getPawnPromotion() == false)
                     {
-                        PieceColor pc = (save.getSaveSize() % 2 == 0) ? BLACK : WHITE;
-                        screen.setBoardStatus(boardStatus, pc);
+                        (new Thread(ai)).start();
+
+                    }
+                    if(gameType == 3 && board.isMoveCompleted())
+                    {
+                        Action action = board.getActionMade();
+                        nt.sendAction(action);
+                        checkBoardStatus();
                     }
 
 
                     if (board.getPawnPromotion() == true) { // draw pawn promotion
                         int amountOfMoves = save.getSaveSize();
-                        if (amountOfMoves % 2 == 0) {
-                            screen.setDrawPawnPromotion(true, PieceColor.BLACK);
-                        } else {
-                            screen.setDrawPawnPromotion(true, PieceColor.WHITE);
+                        PieceColor colorToDraw;
+                        if (amountOfMoves % 2 == 0)
+                        {
+                            if(whiteTurn)
+                            {
+                               colorToDraw = BLACK;
+                            }
+                            else
+                            {
+                                colorToDraw = WHITE;
+                            }
+                            screen.setDrawPawnPromotion(true, colorToDraw);
+                        }
+                        else
+                        {
+                            if(whiteTurn)
+                            {
+                                colorToDraw = WHITE;
+                            }
+                            else
+                            {
+                                colorToDraw = BLACK;
+                            }
+                            screen.setDrawPawnPromotion(true, colorToDraw);
                         }
                     }
                 }
@@ -108,7 +208,25 @@ public class Game {
             }
         }
     };
-    
+
+    private void checkBoardStatus() {
+        board.checkStatus(WHITE);
+        boardStatus = board.getCheckStatus();
+        if(boardStatus > 0)
+        {
+            PieceColor pc = (save.getSaveSize() % 2 == 0) ? BLACK : WHITE;
+            screen.setBoardStatus(boardStatus, pc);
+        }else{
+            board.checkStatus(BLACK);
+            boardStatus = board.getCheckStatus();
+            if(boardStatus > 0)
+            {
+                PieceColor pc = (save.getSaveSize() % 2 == 0) ? BLACK : WHITE;
+                screen.setBoardStatus(boardStatus, pc);
+            }
+        }
+    }
+
     ActionListener actionListener = new ActionListener()
     {
         /**
@@ -119,9 +237,7 @@ public class Game {
     	{
     		if(e.getSource() == menuSaveItem && board == null)
     		{
-    			//save.saveGame(); // give option to save game
-                Network nt = new Network();
-                new Thread(nt).start();
+    			save.saveGame(); // give option to save game
     		}
     		else if(e.getSource() == menuLoadItem) // give option to load game
     		{
@@ -129,8 +245,8 @@ public class Game {
                 if(newSave != null)
                 {
                     screen.createGameTypeScreen(false);
-                    boolean usingAI = (newSave.getGameType() == 2) ? true : false;
-                	board = new Board(newSave, usingAI, false);
+                    int gameType = (newSave.getGameType() == 2) ? 2 : 1;
+                	board = new Board(newSave, gameType, false,drawData);
                     elementArray = board.getElementArray();
                     screen.setElementArray(elementArray);
                     screen.update();
@@ -140,6 +256,7 @@ public class Game {
     		{
     			createGameTypeScreen();
                 board = null;
+                gameType = 0;
     		}
     		
     	}
@@ -154,18 +271,55 @@ public class Game {
         DAL dal = new DAL();
         screen.addMouseListener(mouseAdapter);
         createGameTypeScreen();
+        Action action;
+        //game update loop
+        while(true) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ie) {
+
+            }
+
+            if (board != null) {
+
+                if (ai != null && ai.moveFinished()) {
+                    board.setCanMove(true);
+                    ai.setMoveFinished(false);
+                    checkBoardStatus();
+
+                }
+                //network update code
+                if (nt != null) {
+                    action = nt.getAction();
+                    if (action != null) {
+                        board.movePiece(action);
+                        checkBoardStatus();
+                    }
+
+                }
+
+
+                //board.updateElementArray();
+                elementArray = board.getElementArray();
+                screen.setElementArray(elementArray);
+                screen.update();
+            }
+        }
     }
+
+
 
     /**
      * Creates the window and adds menu and display
      */
     private void createWindow() {
+        drawData = new DrawData(new ArrayList<>());
         JFrame frame = new JFrame("Chess"); // creates window object
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); //exits if X is clicked
         frame.setSize(720, 720);   //sets size of the window was 1280, 720
         frame.setLocationRelativeTo(null); //centers the window
         frame.setResizable(false);
-        screen = new Screen();
+        screen = new Screen(drawData);
         screen.setPreferredSize(new Dimension(690,690));
         frame.add(screen);
         JMenuBar menuBar = new JMenuBar();
@@ -236,6 +390,25 @@ public class Game {
         return null;
     }
 
+    private PieceColor getPlayerColor(int x, int y)
+    {
+        boolean done = false;
+        PieceColor pc = null;
+        do
+        {
+            if (y > 345 && y < 500) {
+                if (x > 105 && x < 260) {
+                    done = true;
+                    pc = BLACK;
+                } else if (x > 370 && x < 585) {
+                    done = true;
+                    pc = WHITE;
+                }
+            }
+        }while(!done);
+        return pc;
+    }
+
     /**
      * Sets variables to make the newGame screen
      */
@@ -254,12 +427,14 @@ public class Game {
      */
     private int getGameType(int x, int y)
     {
-        if(y > 500 || y < 345)
-            return 0;
-        else if (x < 105 || (x > 320 && x < 370) || x > 585)
-            return 0;
+        if((x < 320 && x > 105) && (y > 345 && y < 460))
+            return 1;
+        if((x > 370 && x < 585) && (y > 345 && y < 460))
+            return 2;
+        if((x > 235 && x < 450) && (y > 520 && y < 675))
+            return 3;
         else
-    	    return(x - 105)/(215 + 50) + 1;
+            return 0;
     }
 
     /**

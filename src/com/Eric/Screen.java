@@ -15,14 +15,16 @@ public class Screen extends JComponent{
     final int pawnPromotionTopInset = topInset + 302;
     private boolean drawPawnPromotion = false;
     private boolean drawGameTypeScreen = false;
+    private boolean drawPlayerColorScreen = false;
     private ArrayList<Element> elementArray; // array to be displayed
     private Color color1 = new Color(160, 82, 45);
     private Color color2 = new Color(245, 222, 179);
     private PieceColor pawnPromotionColor;
     private int boardStatus; // current board status
     private PieceColor gameWinner; // who won
-    public Screen(){
-    
+    private DrawData drawData;
+    public Screen(DrawData drawData){
+        this.drawData = drawData;
     }
 
     @Override
@@ -33,6 +35,11 @@ public class Screen extends JComponent{
         {
             drawGameTypeScreen(g);
             
+        }
+        else if(drawPlayerColorScreen)
+        {
+            drawPlayerColorScreen(g);
+            System.out.println("hello");
         }
         else 
         {
@@ -49,7 +56,9 @@ public class Screen extends JComponent{
             if (drawPawnPromotion) {
                 drawPawnPromotion(g);
             }
+
         }
+
     }
 
     /**
@@ -208,6 +217,7 @@ public class Screen extends JComponent{
      */
     private void drawElementArray(Graphics g)
     {
+        elementArray = drawData.getElementArray();
     	for(int i = 0; i < elementArray.size(); i++)
     	{
     		Element e = elementArray.get(i);
@@ -221,7 +231,7 @@ public class Screen extends JComponent{
      */
     public void update()
     {
-    	repaint();
+    	this.repaint();
     }
 
     /**
@@ -231,6 +241,11 @@ public class Screen extends JComponent{
     public void setDrawPawnPromotion(boolean drawPawnPromotion)
     {
         this.drawPawnPromotion = drawPawnPromotion;
+    }
+
+    public void setDrawPlayerColorScreen(boolean drawPlayerColorScreen)
+    {
+        this.drawPlayerColorScreen = drawPlayerColorScreen;
     }
 
     /**
@@ -281,8 +296,10 @@ public class Screen extends JComponent{
         paintString(g, "Choose the way you want to play!", 225, 250);
         paintRectangle(g, 105, 345, 215, 155, Color.BLACK); // vs Friend Square
         paintRectangle(g, 370, 345, 215, 155, Color.BLACK); // vs Computer Square
+        paintRectangle(g, 235, 520, 215, 155, Color.BLACK); // Online square
         paintString(g, "Play vs a friend", 160, 425);
         paintString(g, "Play vs the computer", 410, 425);
+        paintString(g, "Play Online", 302, 602);
     }
 
     /**
@@ -327,5 +344,17 @@ public class Screen extends JComponent{
         paintRectangle(g, 370, 350, 175 ,175, Color.BLACK); // exit box
         paintString(g, "Play again?", 190, 440);
         paintString(g, "Exit Game", 425, 440);
+    }
+
+    private void drawPlayerColorScreen(Graphics g)
+    {
+        paintRectangleAndFill(g, leftInset, topInset, (squareSize * 8), (squareSize * 8), color2); // fills whole screen
+        paintRectangle(g, 105, 345, 215, 155, Color.BLACK); // BLACK square
+        paintRectangle(g, 370, 345, 215, 155, Color.BLACK); // WHITE square
+        paintString(g, "BLACK", 177, 425, new Font("Arial", Font.BOLD, 20)); // BLACK button
+        paintString(g, "WHITE", 440, 425, new Font("Arial", Font.BOLD, 20));
+
+
+
     }
 }

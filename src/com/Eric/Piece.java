@@ -15,27 +15,23 @@ public class Piece
      * Constructor
      * @param pieceType The pieceType
      * @param pieceColor The pieceColor
-     * @param position	 The position of the piece
      */
-    public Piece(PieceType pieceType, PieceColor pieceColor, Position position)
+    public Piece(PieceType pieceType, PieceColor pieceColor)
     {
         this.pieceColor = pieceColor;
         this.pieceType = pieceType;
-        this.position = position;
 
     }
     /**
      * Constructor used for deep copy
      * @param pieceType The pieceType
      * @param pieceColor THe piece Color
-     * @param position	The piece Position
      * @param moves	How many moves the piece did
      */
-    private Piece(PieceType pieceType, PieceColor pieceColor, Position position, int moves)
+    private Piece(PieceType pieceType, PieceColor pieceColor, int moves)
     {
         this.pieceColor = pieceColor;
         this.pieceType = pieceType;
-        this.position = position;
         this.moves = moves;
     }
     /**
@@ -121,6 +117,6 @@ public class Piece
      */
     public Piece copy()
     {
-        return new Piece(pieceType, pieceColor, position, moves);
+        return new Piece(pieceType, pieceColor, moves);
     }
 }

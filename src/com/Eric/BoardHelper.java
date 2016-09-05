@@ -22,14 +22,23 @@ public class BoardHelper {
     private int blackPieceCount; // count for black pieces
     private int whitePieceCount; // count for white pieces
 
-    public BoardHelper(Piece[][] board, boolean whiteTurn, Save save, boolean isPlayer) {
+    public BoardHelper(Piece[][] board, boolean whiteTurn, Save save, boolean isPlayer, boolean boardFlipped) {
         this.board = board;
-        if(isPlayer)
+        globalModifier = -1;
+        if(!isPlayer)
         {
-            globalModifier = -1;
-        }else
-        {
-            globalModifier = (whiteTurn) ? -1 : 1;
+            if(whiteTurn)
+            {
+                globalModifier = -1;
+            }
+            else
+            {
+                globalModifier = 1;
+            }
+            if(boardFlipped)
+            {
+                globalModifier *= -1;
+            }
         }
         this.save = save;
         pawnPromotion = false;
@@ -531,60 +540,47 @@ public class BoardHelper {
      * @param pc What color to check for
      * @return Returns integer value, 1 for stalemate, 2 for checkmate
      */
-    public int checkCheck(PieceColor pc) {
+    public int checkCheck(PieceColor pc, PieceColor boardColor) {
         ArrayList<Position> validMoves;
         Position tempPosition = currentPosition;
-        //gets all possible moves for other team
+        int tempModifier = globalModifier;
+        globalModifier = (pc == WHITE) ? -1 : 1;
+        if(boardColor == BLACK)
+        {
+            globalModifier *= -1;
+        }
+        //gets all possible moves for the corresponding pieceColor
         validMoves = new ArrayList<>();
         for (int i = 0; i < board.length; i++) {
             for (int j = 0; j < board[i].length; j++) {
-                if (board[i][j] != null && board[i][j].getPieceColor() != pc) {
+                if (board[i][j] != null && board[i][j].getPieceColor() == pc) {
                     currentPosition = new Position(i, j);
                     validMoves.addAll(removeCheckmateMoves(getMoves(board[i][j].getPieceType())));
                 }
 
             }
         }
-        // if amount of moves is 0, checks if the king can be attacked by current team
+        // if amount of moves is 0, checks if the king can be attacked by other team
         if (validMoves.size() == 0) {
+            globalModifier *= -1;
             validMoves = new ArrayList<>();
             for (int k = 0; k < board.length; k++) {
                 for (int l = 0; l < board[k].length; l++) {
-                    if (board[k][l] != null && board[k][l].getPieceColor() == pc) {
+                    if (board[k][l] != null && board[k][l].getPieceColor() != pc) {
                         currentPosition = new Position(k, l);
                         validMoves.addAll(removeCheckmateMoves(getMoves(board[k][l].getPieceType())));
                     }
                 }
             }
+            globalModifier *= -1;
             if (isKingAttackable(validMoves))
                 return 2; //2 for check mate
             else {
-                // if its not a check mate, this checks for check
-                // finds king, then sees if he can move anywhere
-                globalModifier *= -1;
-                boolean foundKing = false;
-                for (int i = 0; i < board.length; i++) {
-                    for (int j = 0; j < board[i].length; j++) {
-                        if (board[i][j] != null && board[i][j].getPieceType() == KING) {
-                            currentPosition = new Position(i, j);
-                            validMoves = getMoves(KING);
-                            validMoves = removeCheckmateMoves(validMoves);
-                            if (validMoves.size() == 0) {
-                                globalModifier *= 1;
-                                return 1;
-                            }
-                            foundKing = true;
-                            break;
-
-                        }
-                    }
-                    if (foundKing)
-                        break;
-                }
+                return 1; // 1 for stalement
             }
 
         }
-        globalModifier *= 1;
+        globalModifier = tempModifier;
         currentPosition = tempPosition;
         return 0;
     }
@@ -749,11 +745,9 @@ public class BoardHelper {
      *
      * @param pt the piece type that will be set
      */
-    public void setPiece(PieceType pt)
+    public void setPiece(PieceType pt, PieceColor pc)
     {
-    	
-    	PieceColor pc = (globalModifier == 1) ? WHITE : BLACK;
-		board[newPosition.getX()][newPosition.getY()] = new Piece(pt, pc, newPosition);
+		board[newPosition.getX()][newPosition.getY()] = new Piece(pt, pc);
 		pawnPromotion = false;
     	
     }
@@ -797,5 +791,15 @@ public class BoardHelper {
                 board[board.length - i - 1][j] = temp;
             }
         }
+
+        //switch white king and queen
+        temp = board[0][3];
+        board[0][3] = board[0][4];
+        board[0][4] = temp;
+
+        //switch black king and queen
+        temp = board[7][3];
+        board[7][3] = board[7][4];
+        board[7][4] = temp;
     }
 }

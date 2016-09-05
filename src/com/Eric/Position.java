@@ -67,7 +67,7 @@ public class Position {
      */
     public String toString()
     {
-        return getColumnLetter(y) + "" + x;
+        return (getColumnLetter(y) + "" + x);
     }
 
     public boolean isCenterSquare()

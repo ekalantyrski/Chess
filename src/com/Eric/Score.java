@@ -5,7 +5,7 @@ package com.Eric;
  */
 public class Score {
 
-    private int score; // score attained
+    private double score; // score attained
     private Save save; // moves that happened
 
     /**
@@ -13,7 +13,7 @@ public class Score {
      * @param score The score given
      * @param save The Save of the moves
      */
-    public Score(int score, Save save)
+    public Score(double score, Save save)
     {
         this.score = score;
         this.save = save;
@@ -31,7 +31,7 @@ public class Score {
      * Returns the score
      * @return score
      */
-    public int getScore() {
+    public double getScore() {
         return score;
     }
 
